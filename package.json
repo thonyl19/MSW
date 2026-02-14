@@ -1,0 +1,24 @@
+{
+  "name": "msw_mock",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "esbuild": "^0.27.3",
+    "esbuild-vue": "^1.2.2",
+    "msw": "^2.12.10",
+    "vue": "^2.6.14",
+    "vue-template-compiler": "^2.6.14"
+  },
+  "msw": {
+    "workerDirectory": [
+      "Q:\\ZAC_Dev\\Genesis_MVC\\wwwroot"
+    ]
+  }
+}
