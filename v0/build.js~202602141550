@@ -1,0 +1,51 @@
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * 設定輸出目錄
+ * 建議將整個 src 目錄同步過去，以維持 ESM 的相對路徑結構
+ */
+const sourceDir = path.join(__dirname, 'src');
+const targetDir = 'Q:/ZAC_Dev/Genesis_MVC/wwwroot/';
+
+/**
+ * 遞迴複製目錄函數
+ */
+function copyFolderSync(from, to) {
+    if (!fs.existsSync(to)) {
+        fs.mkdirSync(to, { recursive: true });
+    }
+    fs.readdirSync(from).forEach(element => {
+        const fromPath = path.join(from, element);
+        const toPath = path.join(to, element);
+        if (fs.lstatSync(fromPath).isDirectory()) {
+            copyFolderSync(fromPath, toPath);
+        } else {
+            // 僅複製 .js 檔案 (或是您需要的其他靜態資源)
+            if (element.endsWith('.js') || element.endsWith('.json')) {
+                fs.copyFileSync(fromPath, toPath);
+            }
+        }
+    });
+}
+
+try {
+    console.log("📂 正在同步原始碼至 MVC 專案...");
+    
+    // 清除舊有的副本 (選配，確保同步)
+    if (fs.existsSync(targetDir)) {
+        // Node 14.14+ 支援 fs.rmSync
+        if (fs.rmSync) {
+            fs.rmSync(targetDir, { recursive: true, force: true });
+        }
+    }
+
+    copyFolderSync(sourceDir, targetDir);
+    
+    console.log("🚀 同步成功！");
+    console.log(`📍 目的地: ${targetDir}`);
+    console.log("� 現在您可以在 HTML 中載入路徑: /pages/operation.js");
+} catch (err) {
+    console.error("❌ 同步失敗:", err);
+    process.exit(1);
+}

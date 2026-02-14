@@ -1,0 +1,174 @@
+<template>
+  <div class="mock-panel-container" :class="{ 'is-minimized': isMinimized }">
+    <div class="mock-panel-header" @click="isMinimized = !isMinimized">
+      <span class="header-icon">🧪</span>
+      <span class="header-title">測試面板</span>
+      <span class="header-toggle">{{ isMinimized ? '▲' : '▼' }}</span>
+    </div>
+
+    <div v-show="!isMinimized" class="mock-panel-content">
+      <div class="mock-item">
+        <label>POST /api/login</label>
+        <div class="select-wrapper">
+          <span class="status-icon" :class="config.loginStatus"></span>
+          <select v-model="config.loginStatus">
+            <option value="success">success</option>
+            <option value="invalid_password">invalid_password</option>
+            <option value="error">server_error (500)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mock-item">
+        <label>POST /ADM/Operation/ListData</label>
+        <div class="select-wrapper">
+          <span class="status-icon " :class="config.arg"></span>
+          <select v-model="config.arg">
+            <option value="test">test</option>
+            <option value="error">error</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mock-item">
+        <label>API 延遲 (Latency)</label>
+        <div class="select-wrapper">
+          <select v-model.number="config.apiDelay">
+            <option :value="0">0ms (無延遲)</option>
+            <option :value="500">500ms (一般)</option>
+            <option :value="2000">2000ms (慢網路)</option>
+            <option :value="5000">5000ms (逾時測試)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mock-footer">
+        <small>MSW 運作中 - 僅本地開發顯示</small>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { mockConfig } from '../store';
+
+export default {
+  name: 'MockPanel',
+  data() {
+    return {
+      config: mockConfig,
+      isMinimized: false
+    };
+  }
+};
+</script>
+
+<style scoped>
+/* 面板容器：固定在右下角 */
+.mock-panel-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 280px;
+  background-color: #1e1e2d;
+  color: #a2a3b7;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  z-index: 999999;
+  border: 1px solid #2b2b40;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.mock-panel-container.is-minimized {
+  width: 150px;
+  height: 40px;
+}
+
+/* 標題列 */
+.mock-panel-header {
+  padding: 10px 15px;
+  background-color: #2b2b40;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.header-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ffffff;
+  margin-left: 8px;
+}
+
+/* 選項內容區 */
+.mock-panel-content {
+  padding: 15px;
+}
+
+.mock-item {
+  margin-bottom: 15px;
+}
+
+.mock-item label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  color: #6c7293;
+  letter-spacing: 0.5px;
+}
+
+/* 下拉選單樣式優化 */
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+select {
+  width: 100%;
+  background-color: #24243e;
+  color: #ffffff;
+  border: 1px solid #3f4254;
+  padding: 6px 10px 6px 30px;
+  border-radius: 4px;
+  font-size: 13px;
+  appearance: none;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: #7239ea;
+}
+
+/* 狀態小圓點 */
+.status-icon {
+  position: absolute;
+  left: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #555;
+}
+
+.status-icon.success { background-color: #10b981; box-shadow: 0 0 5px #10b981; }
+.status-icon.invalid_password { background-color: #ef4444; box-shadow: 0 0 5px #ef4444; }
+.status-icon.error { background-color: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
+
+.mock-footer {
+  margin-top: 10px;
+  text-align: center;
+  border-top: 1px solid #2b2b40;
+  padding-top: 8px;
+}
+
+.mock-footer small {
+  font-size: 10px;
+  color: #444;
+}
+</style>

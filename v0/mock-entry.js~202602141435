@@ -1,0 +1,35 @@
+import Vue from 'vue';
+import { setupWorker } from 'msw/browser';
+import { handlers } from './handlers';
+import MockPanel from './components/MockPanel.vue';
+
+const worker = setupWorker(...handlers);
+const getServiceWorkerUrl = () => {
+    // 取得當前網址路徑，例如 "/ZACMES/User/Login"
+    const path = window.location.pathname;
+    
+    // 取得第一層虛擬目錄名稱，例如 "ZACMES"
+    const segments = path.split('/').filter(Boolean); // 過濾掉空字串
+    const virtualDirectory = segments.length > 0 ? segments[0] : '';
+
+    // 組合出正確的瀏覽器存取路徑
+    // 假設你的檔案放在專案根目錄 (即開發時的 wwwroot 下)
+    return `/${virtualDirectory}/mockServiceWorker.js`.replace(/\/+/g, '/');
+};
+
+worker.start({ 
+    serviceWorker: { 
+        url: getServiceWorkerUrl() ,
+        options: { updateViaCache: 'none' }
+    },
+    onUnhandledRequest: 'bypass',
+}).then(() => {
+    //console.log('%c[MSW] 攔截系統啟動成功', 'color: #10b981; font-weight: bold;');
+    console.log('%c[MSW] 攔截系統已啟動 - 檢查點: 2026-02-13 16:00', 'color: cyan');
+}).catch(err => {
+    console.error('[MSW] 啟動失敗，請檢查檔案路徑或 MIME 類型', err);
+});
+
+const root = document.createElement('div');
+document.body.appendChild(root);
+new Vue({ render: h => h(MockPanel) }).$mount(root);

@@ -1,0 +1,29 @@
+const esbuild = require('esbuild');
+const vuePlugin = require('esbuild-vue'); // 改用 esbuild-vue
+var outdir = 'Q:/ZAC_Dev/Genesis_MVC/wwwroot/'
+
+const entryPoints = {
+  //'mock-common': 'src/mock-entry.js', // 通用版
+  'mock-operation': 'src/pages/operation.js', // 作業管理專用
+  //'mock-user': 'src/pages/user.js' // 使用者管理專用
+};
+
+esbuild.build({
+  entryPoints,
+  bundle: true,
+  outdir, 
+  plugins: [
+    vuePlugin({
+        // 這裡確保它是用 Vue 2 的編譯邏輯
+        workers: false 
+    })
+  ],
+  define: {
+    'process.env.NODE_ENV': '"development"',
+  },
+}).then(() => {
+    console.log("🚀 打包成功！成品已輸出至 MVC 專案");
+}).catch((err) => {
+    console.error("❌ 打包失敗:", err);
+    process.exit(1);
+});

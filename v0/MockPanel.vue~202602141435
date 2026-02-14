@@ -1,0 +1,346 @@
+<template>
+  <div v-if="displayMode === 'icon'" class="mock-floating-icon" @click="restorePanel" title="還原測試面板">
+    🧪
+  </div>
+  <div 
+    v-else
+    ref="panel"
+    class="mock-panel-container" 
+    :class="{ 'is-minimized': displayMode === 'collapsed' }"
+    :style="panelStyle"
+  >
+    <div class="mock-panel-header" @mousedown="startDrag">
+      <span class="header-icon">🧪</span>
+      <span class="header-title">{{ config.pageTitle || '測試面板' }}</span>
+      <div class="header-actions">
+        <button class="action-btn" @click.stop="toggleCollapse" :title="displayMode === 'collapsed' ? '展開' : '收合'">
+          {{ displayMode === 'collapsed' ? '▲' : '▼' }}
+        </button>
+        <button class="action-btn" @click.stop="minimizeToIcon" title="圖示化">
+          🗗
+        </button>
+      </div>
+    </div>
+
+    <transition name="slide-fade">
+      <div v-show="displayMode === 'expanded'" class="mock-panel-content">
+        <div v-for="control in config.controls" :key="control.key" class="mock-item">
+          <label>{{ control.label }}</label>
+          <div class="select-wrapper">
+            <span v-if="control.type === 'select'" class="status-icon" :class="config[control.key]"></span>
+            <select v-if="control.type === 'select'" v-model="config[control.key]">
+              <option v-for="opt in control.options" :key="opt.value" :value="opt.value">
+                {{ opt.text }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 預設延遲控制 (若 controls 無定義) -->
+        <div v-if="!hasControl('apiDelay')" class="mock-item">
+          <label>API 延遲 (Latency)</label>
+          <div class="select-wrapper">
+            <select v-model.number="config.apiDelay">
+              <option :value="0">0ms (無延遲)</option>
+              <option :value="500">500ms (一般)</option>
+              <option :value="2000">2000ms (慢網路)</option>
+              <option :value="5000">5000ms (逾時測試)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mock-footer">
+          <small>MSW 運作中 - 僅本地開發顯示</small>
+        </div>
+      </div>
+    </transition>
+  </div>
+</template>
+
+<script>
+import { mockConfig } from '../store';
+
+export default {
+  name: 'MockPanel',
+  data() {
+    return {
+      config: mockConfig,
+      displayMode: 'expanded', // 'expanded', 'collapsed', 'icon'
+      position: { top: null, left: null, bottom: 20, right: 20 },
+      dragging: false,
+      rel: { x: 0, y: 0 }
+    };
+  },
+  computed: {
+    panelStyle() {
+      if (this.position.top !== null) {
+        return {
+          top: `${this.position.top}px`,
+          left: `${this.position.left}px`,
+          bottom: 'auto',
+          right: 'auto'
+        };
+      }
+      return {
+        bottom: `${this.position.bottom}px`,
+        right: `${this.position.right}px`
+      };
+    }
+  },
+  mounted() {
+    const saved = sessionStorage.getItem('mock-panel-pos');
+    if (saved) {
+      try {
+        const { top, left, mode } = JSON.parse(saved);
+        this.position.top = top;
+        this.position.left = left;
+        this.displayMode = mode || 'expanded';
+      } catch (e) {
+        console.warn('Failed to load mock panel position');
+      }
+    }
+    window.addEventListener('mousemove', this.onDrag);
+    window.addEventListener('mouseup', this.stopDrag);
+  },
+  beforeDestroy() {
+    window.removeEventListener('mousemove', this.onDrag);
+    window.removeEventListener('mouseup', this.stopDrag);
+  },
+  methods: {
+    hasControl(key) {
+      return this.config.controls?.some(c => c.key === key);
+    },
+    toggleCollapse() {
+      this.displayMode = this.displayMode === 'collapsed' ? 'expanded' : 'collapsed';
+      this.saveState();
+    },
+    minimizeToIcon() {
+      this.displayMode = 'icon';
+      this.saveState();
+    },
+    restorePanel() {
+      this.displayMode = 'expanded';
+      this.saveState();
+    },
+    saveState() {
+      sessionStorage.setItem('mock-panel-pos', JSON.stringify({
+        top: this.position.top,
+        left: this.position.left,
+        mode: this.displayMode
+      }));
+    },
+    startDrag(e) {
+      if (this.displayMode === 'icon') return;
+      const rect = this.$refs.panel.getBoundingClientRect();
+      this.dragging = true;
+      this.rel = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    },
+    onDrag(e) {
+      if (!this.dragging) return;
+      
+      let newLeft = e.clientX - this.rel.x;
+      let newTop = e.clientY - this.rel.y;
+      
+      // Boundary check
+      const panelWidth = this.$refs.panel.offsetWidth;
+      const panelHeight = this.$refs.panel.offsetHeight;
+      
+      newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - panelWidth));
+      newTop = Math.max(0, Math.min(newTop, window.innerHeight - panelHeight));
+      
+      this.position.left = newLeft;
+      this.position.top = newTop;
+    },
+    stopDrag() {
+      if (this.dragging) {
+        this.dragging = false;
+        this.saveState();
+      }
+    }
+  }
+};
+</script>
+
+<style scoped>
+/* 面板容器 */
+.mock-panel-container {
+  position: fixed;
+  width: 280px;
+  background-color: #1e1e2d;
+  color: #a2a3b7;
+  border-radius: 12px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6);
+  font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  z-index: 999999;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.mock-panel-container.is-minimized {
+  width: 180px;
+}
+
+/* 圖示化模式 */
+.mock-floating-icon {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 52px;
+  height: 52px;
+  background: #1e1e2d;
+  border: 1px solid #7239ea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 999999;
+  font-size: 24px;
+  box-shadow: 0 8px 24px rgba(114, 57, 234, 0.3);
+  opacity: 0.6;
+  transition: all 0.3s;
+}
+
+.mock-floating-icon:hover {
+  opacity: 1;
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 0 12px 32px rgba(114, 57, 234, 0.5);
+}
+
+/* 標題列 */
+.mock-panel-header {
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #2b2b40 0%, #1e1e2d 100%);
+  display: flex;
+  align-items: center;
+  cursor: grab;
+  user-select: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mock-panel-header:active {
+  cursor: grabbing;
+}
+
+.header-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-left: 10px;
+  letter-spacing: 0.5px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: transparent;
+  border: none;
+  color: #6c7293;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* 選項內容區 */
+.mock-panel-content {
+  padding: 20px;
+}
+
+.mock-item {
+  margin-bottom: 18px;
+}
+
+.mock-item label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  color: #6c7293;
+  letter-spacing: 1px;
+}
+
+/* 下拉選單樣式 */
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+select {
+  width: 100%;
+  background-color: #24243e;
+  color: #ffffff;
+  border: 1px solid #3f4254;
+  padding: 8px 12px 8px 34px;
+  border-radius: 6px;
+  font-size: 13px;
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+select:focus {
+  outline: none;
+  border-color: #7239ea;
+}
+
+/* 狀態圖示 */
+.status-icon {
+  position: absolute;
+  left: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #444;
+  box-shadow: 0 0 8px rgba(0,0,0,0.5);
+}
+
+.status-icon.success, .status-icon.test { background-color: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+.status-icon.invalid_password { background-color: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+.status-icon.error { background-color: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+
+.mock-footer {
+  margin-top: 15px;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 12px;
+}
+
+.mock-footer small {
+  font-size: 10px;
+  color: #444b66;
+  font-style: italic;
+}
+
+/* 動畫 */
+.slide-fade-enter-active {
+  transition: all 0.3s ease;
+}
+.slide-fade-leave-active {
+  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-fade-enter, .slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+</style>
