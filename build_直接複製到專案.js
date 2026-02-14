@@ -4,16 +4,33 @@ const esbuild = require('esbuild');
 
 /**
  * 設定目錄
- * 因為建立了 mklink，我們只需要把編譯後的核心檔案放到 src/esm/ 即可
  */
-const targetDir = path.join(__dirname, 'src/esm/');
+const sourceDir = path.join(__dirname, 'src');
+const targetDir = 'Q:/ZAC_Dev/Genesis_MVC/wwwroot/';
+
+/**
+ * 遞迴複製目錄函數
+ */
+function copyFolderSync(from, to) {
+    if (!fs.existsSync(to)) {
+        fs.mkdirSync(to, { recursive: true });
+    }
+    fs.readdirSync(from).forEach(element => {
+        const fromPath = path.join(from, element);
+        const toPath = path.join(to, element);
+        if (fs.lstatSync(fromPath).isDirectory()) {
+            copyFolderSync(fromPath, toPath);
+        } else {
+            // 僅複製 .js 檔案、.json 檔案
+            if (element.endsWith('.js') || element.endsWith('.json')) {
+                fs.copyFileSync(fromPath, toPath);
+            }
+        }
+    });
+}
 
 async function run() {
     try {
-        if (!fs.existsSync(targetDir)) {
-            fs.mkdirSync(targetDir, { recursive: true });
-        }
-
         console.log("📦 正在預編譯 MSW 全功能套件 (Core + Browser)...");
         
         // 建立一個臨時的入口點來合併匯出 msw 和 msw/browser
@@ -35,9 +52,11 @@ async function run() {
         // 刪除臨時檔案
         if (fs.existsSync(tempEntry)) fs.unlinkSync(tempEntry);
 
+        console.log("📂 正在同步業務原始碼...");
+        copyFolderSync(sourceDir, targetDir);
+        
         console.log("🚀 處理完畢！");
         console.log(`📍 MSW 完整套件已被編譯至: ${path.join(targetDir, 'msw-core.js')}`);
-        console.log("💡 由於您已建立 mklink，現在只需在專案中引用 msw-loader.js 即可。");
     } catch (err) {
         console.error("❌ 執行失敗:", err);
         process.exit(1);

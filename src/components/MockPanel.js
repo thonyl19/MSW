@@ -15,19 +15,27 @@ export default {
         </div>
       </div>
       <div v-show="displayMode === 'expanded'" class="mock-panel-content">
-        <div v-for="control in config.controls" :key="control.key" class="mock-item">
+        <div class="mock-item main-switch">
+          <label class="switch-container">
+            <span class="switch-label">啟用 MSW 攔截</span>
+            <input type="checkbox" v-model="config.isEnabled">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="divider"></div>
+        <div v-for="control in config.controls" :key="control.key" class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
           <label>{{ control.label }}</label>
           <div class="select-wrapper">
             <span v-if="control.type === 'select'" class="status-icon" :class="config[control.key]"></span>
-            <select v-if="control.type === 'select'" v-model="config[control.key]">
+            <select v-if="control.type === 'select'" v-model="config[control.key]" :disabled="!config.isEnabled">
               <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
             </select>
           </div>
         </div>
-        <div v-if="!hasControl('apiDelay')" class="mock-item">
+        <div v-if="!hasControl('apiDelay')" class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
           <label>API 延遲 (Latency)</label>
           <div class="select-wrapper">
-            <select v-model.number="config.apiDelay">
+            <select v-model.number="config.apiDelay" :disabled="!config.isEnabled">
               <option :value="0">0ms (無延遲)</option>
               <option :value="500">500ms (一般)</option>
               <option :value="2000">2000ms (慢網路)</option>
@@ -35,7 +43,10 @@ export default {
             </select>
           </div>
         </div>
-        <div class="mock-footer"><small>MSW 運作中 (No-Build Mode)</small></div>
+        <div class="mock-footer">
+          <small v-if="config.isEnabled">MSW 運作中 (No-Build Mode)</small>
+          <small v-else style="color: #f59e0b;">MSW 已停用 (後端模式)</small>
+        </div>
       </div>
     </div>
   </div>
@@ -131,14 +142,28 @@ export default {
         .header-actions { display: flex; gap: 8px; }
         .action-btn { background: transparent; border: none; color: #6c7293; cursor: pointer; padding: 4px; font-size: 12px; border-radius: 4px; display: flex; align-items: center; }
         .mock-panel-content { padding: 20px; }
-        .mock-item { margin-bottom: 18px; }
+        .mock-item { margin-bottom: 18px; transition: opacity 0.3s ease; }
+        .mock-item.is-disabled { opacity: 0.4; pointer-events: none; }
         .mock-item label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; color: #6c7293; }
+        
+        /* Switch Styles */
+        .main-switch { margin-bottom: 20px; }
+        .switch-container { display: flex !important; align-items: center; justify-content: space-between; cursor: pointer; text-transform: none !important; color: #ffffff !important; font-size: 13px !important; }
+        .switch-container input { display: none; }
+        .slider { position: relative; display: inline-block; width: 40px; height: 20px; background-color: #3f4254; border-radius: 20px; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .4s; }
+        input:checked + .slider { background-color: #7239ea; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .divider { height: 1px; background: rgba(255, 255, 255, 0.05); margin: 0 -20px 20px -20px; }
+
         .select-wrapper { position: relative; display: flex; align-items: center; }
         select { width: 100%; background-color: #24243e; color: #ffffff; border: 1px solid #3f4254; padding: 8px 12px 8px 34px; border-radius: 6px; font-size: 13px; appearance: none; cursor: pointer; }
+        select:disabled { cursor: not-allowed; }
         .status-icon { position: absolute; left: 12px; width: 10px; height: 10px; border-radius: 50%; background-color: #444; }
         .status-icon.success, .status-icon.test { background-color: #10b981; }
         .status-icon.error { background-color: #f59e0b; }
         .mock-footer { margin-top: 15px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px; font-size: 10px; color: #444b66; }
+
       `;
       document.head.appendChild(style);
     },
