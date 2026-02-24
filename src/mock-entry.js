@@ -52,7 +52,7 @@ const startWorker = async () => {
     isStarting = true;
 
     const { baseUrl, appRoot } = getPaths();
-    const swUrl = `${baseUrl}/mockServiceWorker.js`.replace(/\/+/g, '/');
+    const swUrl = `${appRoot}/mockServiceWorker.js`.replace(/\/+/g, '/');
 
     try {
         await worker.start({ 

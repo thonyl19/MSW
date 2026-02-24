@@ -27,7 +27,6 @@ export default {
           <label>{{ control.label }}</label>
           <div :class="control.type === 'select' ? 'select-wrapper' : 'input-wrapper'">
             <template v-if="control.type === 'select'">
-              <span class="status-icon" :class="config[control.key]"></span>
               <select v-model="config[control.key]" :disabled="!config.isEnabled">
                 <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
               </select>
@@ -47,10 +46,6 @@ export default {
               <option :value="5000">5000ms (逾時測試)</option>
             </select>
           </div>
-        </div>
-        <div class="mock-footer">
-          <small v-if="config.isEnabled">MSW 運作中 (No-Build Mode)</small>
-          <small v-else style="color: #f59e0b;">MSW 已停用 (後端模式)</small>
         </div>
       </div>
     </div>
@@ -104,17 +99,20 @@ export default {
         .mock-panel-container {
           position: fixed;
           width: 280px;
-          background: rgba(30, 30, 45, 0.45);
+          background: rgba(30, 30, 45, 0.3);
           backdrop-filter: blur(25px) saturate(180%);
           -webkit-backdrop-filter: blur(25px) saturate(180%);
           color: #ffffff;
           border-radius: 24px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
           font-family: 'Outfit', system-ui, -apple-system, sans-serif;
           z-index: 999999;
           transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s ease;
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        .mock-panel-container:hover{
+          background: rgba(30, 30, 45, 0.7);
+        }
+
         .mock-panel-container.is-minimized { width: 180px; }
         
         .mock-floating-icon {
@@ -170,19 +168,17 @@ export default {
         }
         .action-btn:hover { background: rgba(255, 255, 255, 0.2); color: #ffffff; }
 
-        .mock-panel-content { padding: 20px; }
-        .mock-item { margin-bottom: 22px; transition: opacity 0.3s ease; }
+        .mock-panel-content { padding: 15px 10px; }
+        .mock-item { margin-bottom: 10px; transition: opacity 0.3s ease; }
         .mock-item.is-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
         
         .mock-item label { 
           display: block; 
-          font-size: 13px; 
+          font-size: 15px; 
           font-weight: 600; 
           text-transform: uppercase; 
-          margin-bottom: 10px; 
-          color: rgba(255, 255, 255, 0.7); 
+          color: #ffffff; 
           letter-spacing: 1px;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
         
         /* Glass Controls */
@@ -191,9 +187,9 @@ export default {
           background: rgba(0, 0, 0, 0.2);
           color: #ffffff; 
           border: 1px solid rgba(255, 255, 255, 0.1); 
-          padding: 10px 14px; 
+          padding: 7px; 
           border-radius: 12px; 
-          font-size: 13px; 
+          font-size: 15px; 
           font-family: inherit; 
           transition: all 0.3s ease;
           outline: none;
@@ -207,7 +203,7 @@ export default {
         }
 
         select { 
-          padding-left: 36px; 
+          padding-left: 1.5rem; 
           cursor: pointer; 
           appearance: none;
           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
@@ -238,20 +234,8 @@ export default {
         input:checked + .slider:before { transform: translateX(20px); }
 
         .divider { height: 1px; background: rgba(255, 255, 255, 0.1); margin: 0 -20px 24px -20px; }
-
-        .status-icon { position: absolute; left: 14px; width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
-        .status-icon.success, .status-icon.test { color: #10b981; background-color: #10b981; }
-        .status-icon.error { color: #f59e0b; background-color: #f59e0b; }
-
-        .mock-footer { 
-          margin-top: 10px; 
-          text-align: center; 
-          border-top: 1px solid rgba(255, 255, 255, 0.1); 
-          padding: 16px; 
-          font-size: 10px; 
-          color: rgba(255, 255, 255, 0.4); 
-          background: rgba(0, 0, 0, 0.2);
-        }
+ 
+ 
 
         /* Scrollbar */
         textarea::-webkit-scrollbar { width: 6px; }
