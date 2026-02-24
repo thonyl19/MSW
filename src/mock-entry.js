@@ -22,25 +22,53 @@ export const registerMock = (options) => {
     }
 };
 
-const getServiceWorkerUrl = () => {
+/**
+ * 動態計算路徑
+ */
+const getPaths = () => {
+    // 優先從 msw-loader.js 的當前位置判斷
+    // 如果找不到，則嘗試從 window.location 萃取虛擬目錄
+    const scripts = document.getElementsByTagName('script');
+    for (let s of scripts) {
+        if (s.src.includes('msw-loader.js')) {
+            const url = new URL(s.src);
+            const baseUrl = url.pathname.substring(0, url.pathname.lastIndexOf('/'));
+            const appRoot = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1) || '/';
+            return { baseUrl, appRoot };
+        }
+    }
+
     const path = window.location.pathname;
     const segments = path.split('/').filter(Boolean);
     const virtualDirectory = segments.length > 0 ? segments[0] : '';
-    return `/${virtualDirectory}/mockServiceWorker.js`.replace(/\/+/g, '/');
+    const appRoot = `/${virtualDirectory}/`.replace(/\/+/g, '/');
+    return { baseUrl: `${appRoot}MSW`, appRoot };
 };
 
-const startWorker = () => {
-    worker.start({ 
-        serviceWorker: { 
-            url: getServiceWorkerUrl() ,
-            options: { updateViaCache: 'none' }
-        },
-        onUnhandledRequest: 'bypass',
-    }).then(() => {
-        console.log('%c[MSW] 攔截系統已啟動', 'color: cyan');
-    }).catch(err => {
+let isStarting = false;
+
+const startWorker = async () => {
+    if (isStarting) return;
+    isStarting = true;
+
+    const { baseUrl, appRoot } = getPaths();
+    const swUrl = `${baseUrl}/mockServiceWorker.js`.replace(/\/+/g, '/');
+
+    try {
+        await worker.start({ 
+            serviceWorker: { 
+                url: swUrl,
+                options: { updateViaCache: 'none' }
+            },
+            scope: appRoot,
+            onUnhandledRequest: 'bypass',
+        });
+        console.log(`%c[MSW] 攔截系統已啟動 (作用域: ${appRoot})`, 'color: cyan; font-weight: bold;');
+    } catch (err) {
         console.error('[MSW] 啟動失敗', err);
-    });
+    } finally {
+        isStarting = false;
+    }
 };
 
 const stopWorker = () => {
@@ -59,7 +87,14 @@ if (mockConfig.isEnabled) {
     startWorker();
 }
 
-const root = document.createElement('div');
-document.body.appendChild(root);
-new Vue({ render: h => h(MockPanel) }).$mount(root);
+// 延遲掛載 UI，確保不與主程式爭搶 DOM
+setTimeout(() => {
+    const rootId = 'msw-panel-root';
+    if (document.getElementById(rootId)) return;
+    
+    const root = document.createElement('div');
+    root.id = rootId;
+    document.body.appendChild(root);
+    new Vue({ render: h => h(MockPanel) }).$mount(root);
+}, 100);
 

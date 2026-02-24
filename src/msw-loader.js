@@ -71,25 +71,29 @@
 
 
     /**
-     * 動態載入入口模組
+     * 動態載入入口模組 (支援多檔案組合)
      */
     if (pageScript) {
-        const moduleScript = document.createElement('script');
-        moduleScript.type = 'module';
+        const pages = pageScript.split(',').map(s => s.trim()).filter(Boolean);
         
-        let finalSrc = '';
-        if (pageScript.startsWith('~')) {
-            finalSrc = pageScript.replace('~', baseUrl);
-        } else if (pageScript.endsWith('.js')) {
-            finalSrc = `${baseUrl}/pages/${pageScript}`;
-        } else {
-            finalSrc = `${baseUrl}/pages/${pageScript}.js`;
-        }
+        pages.forEach(page => {
+            const moduleScript = document.createElement('script');
+            moduleScript.type = 'module';
+            
+            let finalSrc = '';
+            if (page.startsWith('~')) {
+                finalSrc = page.replace('~', baseUrl);
+            } else if (page.endsWith('.js')) {
+                finalSrc = `${baseUrl}/pages/${page}`;
+            } else {
+                finalSrc = `${baseUrl}/pages/${page}.js`;
+            }
 
-        moduleScript.src = finalSrc;
-        document.head.appendChild(moduleScript);
-        
-        console.log(`%c[MSW Loader] 已啟動頁面模組: ${pageScript}`, 'color: #7239ea; font-weight: bold;');
+            moduleScript.src = finalSrc;
+            document.head.appendChild(moduleScript);
+            console.log(`%c[MSW Loader] 已啟動頁面模組: ${page}`, 'color: #7239ea; font-weight: bold;');
+        });
     }
+
 })();
 

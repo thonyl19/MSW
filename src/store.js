@@ -19,7 +19,18 @@ new Vue().$watch(() => mockConfig.isEnabled, (val) => {
 });
 
 export const _registerPage = (title, controls) => {
-  mockConfig.pageTitle = title;
-  mockConfig.controls = controls;
+  // 如果已經有標題，則進行組合或更新
+  if (mockConfig.pageTitle === '通用測試') {
+    mockConfig.pageTitle = title;
+  } else if (!mockConfig.pageTitle.includes(title)) {
+    mockConfig.pageTitle += ` & ${title}`;
+  }
+
+  // 合併控制項 (依據 key 進行去重)
+  const existingKeys = new Set(mockConfig.controls.map(c => c.key));
+  const newControls = controls.filter(c => !existingKeys.has(c.key));
+  
+  mockConfig.controls = [...mockConfig.controls, ...newControls];
 };
+
 
