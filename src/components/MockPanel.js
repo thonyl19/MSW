@@ -4,7 +4,13 @@ export default {
   name: 'MockPanel',
   template: `
   <div class="mock-panel-wrapper">
-    <div v-if="displayMode === 'icon'" class="mock-floating-icon" @click="restorePanel" title="還原測試面板">🧪</div>
+    <div v-if="displayMode === 'icon'" 
+         class="mock-floating-icon" 
+         :style="iconStyle"
+         @click="restorePanel" 
+         @mouseenter="startHoverTimer"
+         @mouseleave="clearHoverTimer"
+         title="還原測試面板">🧪</div>
     <div v-else ref="panel" class="mock-panel-container" :class="{ 'is-minimized': displayMode === 'collapsed' }" :style="panelStyle">
       <div class="mock-panel-header" @mousedown="startDrag">
         <span class="header-icon">🧪</span>
@@ -54,8 +60,10 @@ export default {
   data() {
     return {
       config: mockConfig,
-      displayMode: 'expanded',
+      displayMode: 'icon',
       position: { top: null, left: null, bottom: 20, right: 20 },
+      iconAtTop: true,
+      hoverTimer: null,
       dragging: false,
       rel: { x: 0, y: 0 }
     };
@@ -66,6 +74,11 @@ export default {
         return { top: `${this.position.top}px`, left: `${this.position.left}px`, bottom: 'auto', right: 'auto' };
       }
       return { bottom: `${this.position.bottom}px`, right: `${this.position.right}px` };
+    },
+    iconStyle() {
+      return this.iconAtTop 
+        ? { top: '20px', bottom: 'auto', right: '20px' }
+        : { top: 'auto', bottom: '20px', right: '20px' };
     }
   },
   created() {
@@ -78,7 +91,7 @@ export default {
         const { top, left, mode } = JSON.parse(saved);
         this.position.top = top;
         this.position.left = left;
-        this.displayMode = mode || 'expanded';
+        this.displayMode = mode || 'icon';
       } catch (e) {}
     }
     window.addEventListener('mousemove', this.onDrag);
@@ -99,7 +112,7 @@ export default {
         .mock-panel-container {
           position: fixed;
           width: 280px;
-          background: rgba(30, 30, 45, 0.3);
+          background: rgba(30, 30, 45, 0.2);
           backdrop-filter: blur(25px) saturate(180%);
           -webkit-backdrop-filter: blur(25px) saturate(180%);
           color: #ffffff;
@@ -110,15 +123,14 @@ export default {
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .mock-panel-container:hover{
-          background: rgba(30, 30, 45, 0.7);
+          background: rgba(76 , 76, 76,0.9);
         }
 
         .mock-panel-container.is-minimized { width: 180px; }
         
         .mock-floating-icon {
           position: fixed;
-          top: 20px;
-          right: 20px;
+          /* 位置由 iconStyle 動態控制 */
           width: 56px;
           height: 56px;
           background: rgba(114, 57, 234, 0.25);
@@ -132,7 +144,10 @@ export default {
           z-index: 999999;
           font-size: 26px;
           box-shadow: 0 8px 32px rgba(114, 57, 234, 0.2);
-          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                      background 0.3s ease,
+                      top 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+                      bottom 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
         .mock-floating-icon:hover { 
           transform: scale(1.1) rotate(10deg); 
@@ -248,7 +263,19 @@ export default {
     hasControl(key) { return this.config.controls?.some(c => c.key === key); },
     toggleCollapse() { this.displayMode = this.displayMode === 'collapsed' ? 'expanded' : 'collapsed'; this.saveState(); },
     minimizeToIcon() { this.displayMode = 'icon'; this.saveState(); },
-    restorePanel() { this.displayMode = 'expanded'; this.saveState(); },
+    restorePanel() { this.displayMode = 'expanded'; this.clearHoverTimer(); this.saveState(); },
+    startHoverTimer() {
+      this.clearHoverTimer();
+      this.hoverTimer = setTimeout(() => {
+        this.iconAtTop = !this.iconAtTop;
+      }, 1000);
+    },
+    clearHoverTimer() {
+      if (this.hoverTimer) {
+        clearTimeout(this.hoverTimer);
+        this.hoverTimer = null;
+      }
+    },
     saveState() { sessionStorage.setItem('mock-panel-pos', JSON.stringify({ top: this.position.top, left: this.position.left, mode: this.displayMode })); },
     startDrag(e) {
       if (this.displayMode === 'icon') return;
