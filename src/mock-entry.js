@@ -12,7 +12,13 @@ export const worker = setupWorker(...handlers);
  */
 export const registerMock = (options) => {
     const { title, controls, handlers: pageHandlers } = options;
-    
+    var customJson = {
+        label: '自訂回應 JSON', 
+        key: 'customJson', // 對應 mockConfig 中的 key
+        type: 'textarea',
+        placeholder: '請輸入 JSON 格式內容...'
+    }
+    controls.push(customJson)
     // 1. 註冊 UI 面板
     registerPage(title, controls);
     

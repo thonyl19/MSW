@@ -1,5 +1,4 @@
-import { HttpResponse, delay } from 'msw';
-
+import { HttpResponse, delay,passthrough } from 'msw';
 /**
  * 處理自定義 JSON 的標準程序
  * 如果 config 中有 customJson，則解析並回傳 HttpResponse
@@ -32,15 +31,33 @@ export const handleCustomResponse = (config) => {
  * @param {number} [params.status=200] - 預設 HTTP 狀態碼
  * @returns {Promise<HttpResponse>}
  */
-export const sendResponse = async ({ data, mockConfig, status = 200 }) => {
+export const sendResponse = async ({ data, mockConfig, status = 200 ,isPassthrough = true }) => {
     // 1. 處理延遲
-    if (mockConfig.apiDelay > 0) {
-        await delay(mockConfig.apiDelay);
+    switch (mockConfig.apiDelay) {
+        case 0:
+            break;
+        case 500:
+        case 2000:
+        case 5000:
+            await delay(mockConfig.apiDelay);
+            break;
+        case 'Code500':
+            return new HttpResponse("Internal Server Error(測試 API 500)", { status: 500  });
     }
-
+    
     // 2. 處理自定義 JSON 覆寫 (優先權最高)
     const custom = handleCustomResponse(mockConfig);
     if (custom) return custom;
+    
+    if (isPassthrough && data == null){
+        console.groupCollapsed(
+            `%c[passthrough]`, 
+            'color: #908f91b8; font-weight: bold;'
+        );
+        console.log("mockConfig", mockConfig);
+        console.groupEnd();
+        return passthrough();
+    } 
 
     // 3. 處理通用的錯誤切換
     if (mockConfig.arg === 'error') {

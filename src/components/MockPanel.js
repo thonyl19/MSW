@@ -43,13 +43,14 @@ export default {
           </div>
         </div>
         <div v-if="!hasControl('apiDelay')" class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
-          <label>API 延遲 (Latency)</label>
+          <label>API 回應測試</label>
           <div class="select-wrapper">
             <select v-model.number="config.apiDelay" :disabled="!config.isEnabled">
               <option :value="0">0ms (無延遲)</option>
               <option :value="500">500ms (一般)</option>
               <option :value="2000">2000ms (慢網路)</option>
               <option :value="5000">5000ms (逾時測試)</option>
+              <option value="Code500">回應 500</option>
             </select>
           </div>
         </div>
@@ -106,6 +107,12 @@ export default {
       if (document.getElementById('mock-panel-styles')) return;
       const style = document.createElement('style');
       style.id = 'mock-panel-styles';
+/*
+          //backdrop-filter: blur(25px) saturate(180%);
+          -webkit-backdrop-filter: blur(25px) saturate(180%);
+
+*/
+
       style.textContent = `
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
 
@@ -113,8 +120,6 @@ export default {
           position: fixed;
           width: 280px;
           background: rgba(30, 30, 45, 0.2);
-          backdrop-filter: blur(25px) saturate(180%);
-          -webkit-backdrop-filter: blur(25px) saturate(180%);
           color: #ffffff;
           border-radius: 24px;
           font-family: 'Outfit', system-ui, -apple-system, sans-serif;
