@@ -1,4 +1,4 @@
-import Vue from 'vue';
+﻿import Vue from 'vue';
 
 const STORAGE_KEY = 'msw-enabled';
 const getInitialEnabled = () => {
@@ -6,11 +6,23 @@ const getInitialEnabled = () => {
   return saved === null ? true : saved === 'true';
 };
 
+/**
+ * 2.1 狀態總線 (State Bus) 改進
+ * 作為單一事實來源 (Single Source of Truth)
+ */
 export const mockConfig = Vue.observable({
   isEnabled: getInitialEnabled(),
   apiDelay: 0,
+  apiStatus: 200, // 2.5 實施狀態碼攔截
   pageTitle: '通用測試',
-  controls: []
+  controls: [],
+  
+  // 2.6 表單/狀態動態注入 (Dynamic Data Injection)
+  lastAction: null,    // { type: 'FILL_FORM', timestamp: Date.now(), data: {} }
+  activePayload: null, // 用於直接覆蓋 API 回傳的 JSON (Data Stress)
+  
+  // 暫存組件映射 (供注入邏輯找到主畫面組件)
+  _componentMap: {} 
 });
 
 // 監聽並持久化啟用狀態
@@ -32,5 +44,3 @@ export const _registerPage = (title, controls) => {
   
   mockConfig.controls = [...mockConfig.controls, ...newControls];
 };
-
-

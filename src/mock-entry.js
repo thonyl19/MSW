@@ -1,4 +1,4 @@
-import Vue from 'vue';
+﻿import Vue from 'vue';
 import { setupWorker } from 'msw/browser';
 import { handlers } from './handlers.js';
 import { mockConfig, _registerPage as registerPage } from './store.js';
@@ -7,18 +7,29 @@ import MockPanel from './components/MockPanel.js';
 export const worker = setupWorker(...handlers);
 
 /**
+ * 3.1 第一階段：更新 Mock 設定的 API
+ */
+export const updateConfig = (patch) => {
+    Object.assign(mockConfig, patch);
+};
+
+/**
  * 頁面 Mock 註冊入口
- * 同時處理 UI 控制項與 API 攔截邏輯
  */
 export const registerMock = (options) => {
     const { title, controls, handlers: pageHandlers } = options;
-    var customJson = {
-        label: '自訂回應 JSON', 
-        key: 'customJson', // 對應 mockConfig 中的 key
-        type: 'textarea',
-        placeholder: '請輸入 JSON 格式內容...'
+    
+    // 自動確保有自定義 JSON 選項
+    const hasCustomJson = controls.some(c => c.key === 'customJson');
+    if (!hasCustomJson) {
+        controls.push({
+            label: '自訂回應 JSON', 
+            key: 'customJson',
+            type: 'json',
+            placeholder: '{"success": true, "data": {}}'
+        });
     }
-    controls.push(customJson)
+
     // 1. 註冊 UI 面板
     registerPage(title, controls);
     
@@ -32,8 +43,6 @@ export const registerMock = (options) => {
  * 動態計算路徑
  */
 const getPaths = () => {
-    // 優先從 msw-loader.js 的當前位置判斷
-    // 如果找不到，則嘗試從 window.location 萃取虛擬目錄
     const scripts = document.getElementsByTagName('script');
     for (let s of scripts) {
         if (s.src.includes('msw-loader.js')) {
@@ -103,4 +112,3 @@ setTimeout(() => {
     document.body.appendChild(root);
     new Vue({ render: h => h(MockPanel) }).$mount(root);
 }, 100);
-
