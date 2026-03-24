@@ -171,6 +171,7 @@ export default {
           width: 60px;
           height: 60px;
           background: linear-gradient(135deg, rgba(114, 57, 234, 0.3), rgba(64, 37, 204, 0.4));
+          background: rgba(114, 57, 234, 0.25);
           backdrop-filter: blur(12px);
           border: 1px solid rgba(114, 57, 234, 0.5);
           border-radius: 50%;
@@ -179,9 +180,12 @@ export default {
           justify-content: center;
           cursor: pointer;
           z-index: 999999;
-          font-size: 28px;
-          box-shadow: 0 8px 32px rgba(114, 57, 234, 0.3);
-          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease;
+          font-size: 26px;
+          box-shadow: 0 8px 32px rgba(114, 57, 234, 0.2);
+          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                      background 0.3s ease,
+                      top 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+                      bottom 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         }
         .mock-floating-icon:hover { transform: scale(1.15) rotate(12deg); background: rgba(114, 57, 234, 0.5); }
 
@@ -209,10 +213,10 @@ export default {
         .mock-panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
         .mock-panel-content { padding: 20px; }
-        .mock-item { margin-bottom: 18px; transition: opacity 0.3s ease; }
+        .mock-item { transition: opacity 0.3s ease; }
         .mock-item.is-disabled { opacity: 0.25; filter: grayscale(1); pointer-events: none; }
         
-        .mock-item label { display: block; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .mock-item label { display: block; font-size: 12px; font-weight: 600; color: rgba(255,255,255,1); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
         .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .label-row label { margin-bottom: 0; }
         .value-badge { background: rgba(114, 57, 234, 0.2); color: #b794f4; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
@@ -229,21 +233,21 @@ export default {
         .numeric-slider { -webkit-appearance: none; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; outline: none; margin: 10px 0; }
         .numeric-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #7239ea; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(114, 57, 234, 0.4); border: 2px solid #fff; }
 
-        .main-switch { background: rgba(114, 57, 234, 0.1); padding: 15px; border-radius: 16px; border: 1px solid rgba(114, 57, 234, 0.2); }
+        .main-switch {   padding:0px 5px; border-radius: 5px; border: 1px solid rgba(114, 57, 234, 0.2); }
         .switch-container { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
         .switch-container input { display: none; }
         .switch-label { font-size: 14px; color: #fff; font-weight: 500; }
-        .slider { position: relative; display: inline-block; width: 44px; height: 24px; background: rgba(255, 255, 255, 0.15); border-radius: 24px; transition: .4s; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .4s; }
+        .slider { position: relative; display: inline-block; width: 44px; height: 18px; background: rgba(255, 255, 255, 0.15); border-radius: 24px; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px;  background: white; border-radius: 50%; transition: .4s; }
         input:checked + .slider { background: #7239ea; }
         input:checked + .slider:before { transform: translateX(20px); }
         
         .switch-container.tiny .slider { width: 34px; height: 18px; }
-        .switch-container.tiny .slider:before { height: 12px; width: 12px; left: 3px; bottom: 3px; }
+        .switch-container.tiny .slider:before { height: 12px; width: 12px; left: 3px;  }
         .switch-container.tiny input:checked + .slider:before { transform: translateX(16px); }
 
         .divider { display: flex; align-items: center; margin: 24px 0 18px 0; }
-        .divider span { font-size: 10px; color: rgba(255,255,255,0.3); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; margin-right: 15px; }
+        .divider span { font-size: 15px; color: rgba(255,255,255,1); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; margin-right: 15px; }
         .divider:after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
 
         .action-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
