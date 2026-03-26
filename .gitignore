@@ -3,4 +3,7 @@
 **/*~*
 node_modules
 
-/.agent/**/*.*
+/.agent/scripts/**/*.*
+/.agent/skills/**/*.*
+/.agent/workflows/**/*.*
+/.agent/config.yaml
