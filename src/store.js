@@ -1,4 +1,4 @@
-﻿import Vue from 'vue';
+import Vue from 'vue';
 
 const STORAGE_KEY = 'msw-enabled';
 const getInitialEnabled = () => {
@@ -43,4 +43,12 @@ export const _registerPage = (title, controls) => {
   const newControls = controls.filter(c => !existingKeys.has(c.key));
   
   mockConfig.controls = [...mockConfig.controls, ...newControls];
+};
+
+/**
+ * 2.6 元件映射支援
+ */
+export const _registerComponent = (name, instance) => {
+  Vue.set(mockConfig._componentMap, name, instance);
+  console.log(`%c[MSW Store] 已掛載主畫面元件: ${name}`, 'color: #10b981;');
 };

@@ -1,7 +1,7 @@
-﻿import Vue from 'vue';
+import Vue from 'vue';
 import { setupWorker } from 'msw/browser';
 import { handlers } from './handlers.js';
-import { mockConfig, _registerPage as registerPage } from './store.js';
+import { mockConfig, _registerPage as registerPage, _registerComponent } from './store.js';
 import MockPanel from './components/MockPanel.js';
 
 export const worker = setupWorker(...handlers);
@@ -11,6 +11,33 @@ export const worker = setupWorker(...handlers);
  */
 export const updateConfig = (patch) => {
     Object.assign(mockConfig, patch);
+};
+
+/**
+ * 2.6 元件映射與自動注入支援
+ */
+export const registerComponentToMock = (name, instance) => {
+    _registerComponent(name, instance);
+};
+
+/**
+ * 2.6 輔助函數：供主畫面元件快速掛載監聽器以實作「一鍵填表」
+ * @param {Vue} instance Vue 元件實例
+ * @param {string} formKey 元件內部的 data key (預設為 'form')
+ */
+export const useFormInjection = (instance, formKey = 'form') => {
+    if (!instance) return;
+    const unwatch = instance.$watch(() => mockConfig.lastAction, (action) => {
+        if (action && action.type === 'FILL_FORM' && action.data) {
+            console.log(`%c[MSW Injection] 自動填入數據至 ${formKey}`, 'color: #7239ea;', action.data);
+            if (instance[formKey]) {
+                Object.assign(instance[formKey], action.data);
+            }
+        } else if (action && action.type === 'RESET_FORM') {
+            // 如果需要重置 logic 可在此實作
+        }
+    });
+    return unwatch;
 };
 
 /**
