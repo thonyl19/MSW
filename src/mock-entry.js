@@ -87,6 +87,62 @@ const getPaths = () => {
     return { baseUrl: `${appRoot}MSW`, appRoot };
 };
 
+/**
+ * 核心熱重載邏輯 (T003)
+ * @returns {Promise<void>}
+ */
+export const reloadAllMocks = async () => {
+    console.log('%c[MSW] 啟動熱重載程序...', 'color: #7239ea; font-weight: bold;');
+    const startTime = Date.now();
+
+    try {
+        // 1. 重置 MSW Handler 堆疊
+        worker.resetHandlers();
+        
+        // 2. 恢復全域預設 Handlers (如 Login)
+        worker.use(...handlers);
+
+        // 3. 取得當前已載入的頁面連結
+        const pages = [...mockConfig.loadedPages];
+        const timestamp = Date.now();
+
+        // 4. 進行深度重載：源碼重寫 + Blob 注入 (確保 .data.js 也會被載入新版)
+        for (const pageUrl of pages) {
+            console.log(`%c[MSW] 正在重新解析: ${pageUrl}`, 'color: #b794f4');
+            
+            // 抓取源碼 (加上 t 以確保抓到最新源碼)
+            const response = await fetch(`${pageUrl}${pageUrl.includes('?') ? '&' : '?'}t=${timestamp}`);
+            let code = await response.text();
+
+            /**
+             * 深度解析增強 (T003-Fix): 
+             * 1. 支援 ../ 與 ./ 
+             * 2. 將路徑轉換為絕對路徑，否則 Blob URL 會找不到依賴
+             */
+            code = code.replace(/from\s+['"](\.\.?\/[^'"]+\.js)['"]/g, (match, relPath) => {
+                // 先將 pageUrl (可能是路徑) 轉化為完整絕對路徑作為 Base
+                const baseUrl = new URL(pageUrl, window.location.href);
+                // 再對其解析相對路徑
+                const absPath = new URL(relPath, baseUrl).href;
+                return `from '${absPath}${absPath.includes('?') ? '&' : '?'}t=${timestamp}'`;
+            });
+
+            // 建立動態 Blob 路徑並執行載入
+            const blob = new Blob([code], { type: 'application/javascript' });
+            const blobUrl = URL.createObjectURL(blob);
+            
+            await import(blobUrl);
+            URL.revokeObjectURL(blobUrl);
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(`%c[MSW] 熱重載完成！(耗時: ${duration}ms)`, 'color: #10b981; font-weight: bold;');
+    } catch (err) {
+        console.error('[MSW] 熱重載過程發生錯誤', err);
+        throw err;
+    }
+};
+
 let isStarting = false;
 
 const startWorker = async () => {

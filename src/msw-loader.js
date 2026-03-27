@@ -92,6 +92,13 @@
             moduleScript.src = finalSrc;
             document.head.appendChild(moduleScript);
             console.log(`%c[MSW Loader] 已啟動頁面模組: ${page}`, 'color: #7239ea; font-weight: bold;');
+
+            // 記錄路徑以供後續熱重載使用 (T002)
+            import(`${baseUrl}/store.js`).then(m => {
+                if (m.mockConfig && !m.mockConfig.loadedPages.includes(finalSrc)) {
+                    m.mockConfig.loadedPages.push(finalSrc);
+                }
+            }).catch(() => { /* 靜默失敗，避免主流程中斷 */ });
         });
     }
 

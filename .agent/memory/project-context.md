@@ -59,10 +59,15 @@ src/
 |---|---|---|
 | `store.js` | 全域狀態 (`mockConfig`) 管理 | `sessionStorage`, `Vue.observable` |
 | `mock-entry.js` | 插件註冊入口、表單注入 API | `store.js` |
-| `MockPanel.js` | 互動式 UI 控制面板 | `mockConfig`, Vue, Outfit Font |
+| `MockPanel.js` | 互動式 UI 控制面板 | `mockConfig`, Vue, Outfit Font, `reloadAllMocks` |
 | `msw-utils.js` | 回應生成與延遲工廠 | `msw`, `mockConfig` |
 | `handlers.js` | URL 路由攔截定義 | `msw-utils.js` |
-| `msw-loader.js` | Service Worker 啟動器 | `msw` |
+| `msw-loader.js` | Service Worker 啟動器、載入路徑記錄 | `msw`, `store.js` |
+
+---
+**7. 特殊機制: 熱重載 (Hot Reload)**
+- **追蹤**: `msw-loader.js` 將每個 page 模組路徑存入 `mockConfig.loadedPages`。
+- **刷新**: `mock-entry.js` -> `reloadAllMocks()` 會 fetch 原始碼，透過 Regex 強制對相對引用加上 `?t=TIMESTAMP` 後轉為 Blob URL 重新 Import，藉此繞過瀏覽器 ESM 快取，確保連動的 `.data.js` 同步更新。
 
 ---
 **對接主專案 (Genesis_MVC)**:

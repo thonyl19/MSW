@@ -1,4 +1,4 @@
-﻿import { mockConfig } from '../store.js';
+import { mockConfig } from '../store.js';
 
 export default {
   name: 'MockPanel',
@@ -19,6 +19,10 @@ export default {
             <span class="header-subtitle">MSW INTERACTIVE PANEL v2.0</span>
         </div>
         <div class="header-actions">
+          <button class="action-btn reload-btn" 
+                  :class="{ 'is-spinning': isReloading }" 
+                  @click.stop="handleHotReload" 
+                  title="熱重載 Mock 數據">🔄</button>
           <button class="action-btn" @click.stop="minimizeToIcon">🗗</button>
         </div>
       </div>
@@ -62,9 +66,15 @@ export default {
             <label v-if="control.type !== 'actions'">{{ control.label }}</label>
             <div :class="getInputWrapperClass(control)">
               <template v-if="control.type === 'select'">
-                <select v-model="config[control.key]" :disabled="!config.isEnabled">
-                  <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
-                </select>
+                <div class="select-group">
+                  <select v-model="config[control.key]" :disabled="!config.isEnabled">
+                    <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+                  </select>
+                  <button v-if="config[control.key] && config.isEnabled" 
+                          class="select-clear-btn" 
+                          @click="config[control.key] = ''"
+                          title="清除選擇">×</button>
+                </div>
               </template>
               <template v-else-if="control.type === 'json' || control.type === 'textarea'">
                 <textarea v-model="config[control.key]" :placeholder="control.placeholder || '請輸入內容...'" :disabled="!config.isEnabled" rows="3"></textarea>
@@ -103,7 +113,8 @@ export default {
       iconAtTop: true,
       hoverTimer: null,
       dragging: false,
-      rel: { x: 0, y: 0 }
+      rel: { x: 0, y: 0 },
+      isReloading: false
     };
   },
   computed: {
@@ -205,8 +216,12 @@ export default {
         .header-title { font-size: 16px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px; }
         .header-subtitle { font-size: 9px; font-weight: 400; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
         
-        .action-btn { background: rgba(255, 255, 255, 0.08); border: none; color: white; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .header-actions { display: flex; align-items: center; }
+        .action-btn { background: rgba(255, 255, 255, 0.08); border: none; color: white; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-left: 6px; }
         .action-btn:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-1px); }
+        .reload-btn { color: #b794f4; }
+        .is-spinning { animation: mock-spin 0.8s linear infinite; pointer-events: none; opacity: 0.6; }
+        @keyframes mock-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         .mock-panel-body { overflow-y: auto; flex: 1; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
         .mock-panel-body::-webkit-scrollbar { width: 5px; }
@@ -228,7 +243,15 @@ export default {
         }
         select:focus, textarea:focus { border-color: rgba(114, 57, 234, 0.5); box-shadow: 0 0 12px rgba(114, 57, 234, 0.15); background: rgba(0, 0, 0, 0.4); }
         select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 18px; }
-        option { background: #1a1a2e; color: white; }
+        .select-group { position: relative; display: flex; align-items: center; width: 100%; }
+        .select-group select { padding-right: 36px; }
+        .select-clear-btn { 
+          position: absolute; right: 10px; background: rgba(255,255,255,0.1); border: none; 
+          color: rgba(255,255,255,0.7); width: 22px; height: 22px; border-radius: 50%; 
+          display: flex; align-items: center; justify-content: center; cursor: pointer;
+          font-size: 16px; transition: all 0.2s; z-index: 5;
+        }
+        .select-clear-btn:hover { background: rgba(255,255,255,0.25); color: #fff; }
 
         .numeric-slider { -webkit-appearance: none; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; outline: none; margin: 10px 0; }
         .numeric-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #7239ea; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(114, 57, 234, 0.4); border: 2px solid #fff; }
@@ -260,6 +283,18 @@ export default {
     getInputWrapperClass(control) {
       if (control.type === 'boolean' || control.type === 'switch') return 'switch-wrapper';
       return 'input-wrapper';
+    },
+    async handleHotReload() {
+      if (this.isReloading) return;
+      this.isReloading = true;
+      try {
+        const { reloadAllMocks } = await import('../mock-entry.js');
+        await reloadAllMocks();
+      } catch (e) {
+        console.error('[MSW Panel] 熱重載失敗', e);
+      } finally {
+        setTimeout(() => { this.isReloading = false; }, 500);
+      }
     },
     triggerAction(action, controlKey) {
         // 2.6 表單/狀態動態注入: 注入鏈路

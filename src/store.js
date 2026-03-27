@@ -22,7 +22,10 @@ export const mockConfig = Vue.observable({
   activePayload: null, // 用於直接覆蓋 API 回傳的 JSON (Data Stress)
   
   // 暫存組件映射 (供注入邏輯找到主畫面組件)
-  _componentMap: {} 
+  _componentMap: {},
+  
+  // 紀錄已獲載的頁面路徑 (供熱重載使用)
+  loadedPages: []
 });
 
 // 監聽並持久化啟用狀態
@@ -38,11 +41,19 @@ export const _registerPage = (title, controls) => {
     mockConfig.pageTitle += ` & ${title}`;
   }
 
-  // 合併控制項 (依據 key 進行去重)
-  const existingKeys = new Set(mockConfig.controls.map(c => c.key));
-  const newControls = controls.filter(c => !existingKeys.has(c.key));
-  
-  mockConfig.controls = [...mockConfig.controls, ...newControls];
+  // 註冊或更新控制項
+  controls.forEach(newControl => {
+    const index = mockConfig.controls.findIndex(c => c.key === newControl.key);
+    if (index !== -1) {
+      // 如果 key 已存在，進行「地毯式更新」，確保熱重載後 Label/Options 都能反應
+      Object.keys(newControl).forEach(prop => {
+        Vue.set(mockConfig.controls[index], prop, newControl[prop]);
+      });
+    } else {
+      // 否則，新增控制項
+      mockConfig.controls.push(newControl);
+    }
+  });
 };
 
 /**

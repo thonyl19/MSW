@@ -1,5 +1,5 @@
 # [T001]: 升級 Store 與註冊邏輯
-- **Status**: Pending
+- **Status**: Done
 - **Estimated Time**: 15 mins
 
 ## 1. Objective (目標)
@@ -19,7 +19,7 @@
 ---
 
 # [T002]: 調整 Loader 記錄路徑
-- **Status**: Pending
+- **Status**: Done
 - **Estimated Time**: 15 mins
 
 ## 1. Objective (目標)
@@ -37,7 +37,7 @@
 ---
 
 # [T003]: 實作核心重填與重載邏輯
-- **Status**: Pending
+- **Status**: Done
 - **Estimated Time**: 20 mins
 
 ## 1. Objective (目標)
@@ -57,7 +57,7 @@
 ---
 
 # [T004]: MockPanel UI 集成與熱重載測試
-- **Status**: Pending
+- **Status**: Done
 - **Estimated Time**: 20 mins
 
 ## 1. Objective (目標)
