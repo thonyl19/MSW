@@ -92,7 +92,7 @@ export default {
                 <div class="action-button-group">
                     <button v-for="action in control.list" :key="action.text" 
                             class="mock-btn" 
-                            @click="triggerAction(action, control.key)"
+                            @click="triggerAction(action, control)"
                             :disabled="!config.isEnabled">
                         {{ action.text }}
                     </button>
@@ -296,24 +296,27 @@ export default {
         setTimeout(() => { this.isReloading = false; }, 500);
       }
     },
-    triggerAction(action, controlKey) {
-        // 2.6 表單/狀態動態注入: 注入鏈路
-        // 1. 選取情境 -> 寫入 activePayload
-        if (action.payload) {
-            mockConfig.activePayload = action.payload;
+    triggerAction(action, control) {
+        // [MTAS Task 1] 升級為 target + value 結構
+        // 1. 抓取目標對象 (從 control 層級)
+        const target = control.target || 'form';
+
+        if (action.value) {
+            mockConfig.activePayload = action.value;
         }
 
         // 2. 觸發信號 -> 更新 lastAction
         const timestamp = Date.now();
         mockConfig.lastAction = {
-            id: `${controlKey}_${timestamp}`,
-            type: action.type || 'FILL_FORM',
+            id: `${control.key}_${timestamp}`,
+            type: action.type || 'FILL_FORM', // 預設為 FILL_FORM
+            target, // 新增：指定目標對象名稱
             timestamp,
-            data: action.data || action.payload,
+            data: action.value || {}, // 強制使用 value, 不再支持 payload
             metadata: action.metadata || {}
         };
         
-        console.log(`%c[MSW] 觸發動作: ${action.text}`, 'color: #7239ea; font-weight: bold;');
+        console.log(`%c[MSW] 觸發動作: ${action.text} (目標: ${target})`, 'color: #7239ea; font-weight: bold;');
     },
     restorePanel() { this.displayMode = 'expanded'; this.clearHoverTimer(); this.saveState(); },
     minimizeToIcon() { this.displayMode = 'icon'; this.saveState(); },

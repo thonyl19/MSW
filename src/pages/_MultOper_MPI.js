@@ -2,7 +2,7 @@ import { http, HttpResponse, delay, passthrough } from 'msw';
 import { mockConfig } from '../store.js';
 import { registerMock } from '../mock-entry.js';
 import { handleCustomResponse, sendResponse } from '../msw-utils.js';
-import { _Save,_tmpData, _case1, _case2 } from './_MultOper_MPI.data.js';
+import { _Save,_tmpData, _case1, _case2, _form } from './_MultOper_MPI.data.js';
 
 
 // 此頁面專用的 Mock 攔截邏輯
@@ -95,7 +95,7 @@ registerMock({
   title: '_SetUpEQP',
   controls: [
     { 
-      label: '測試批號', 
+      label: '測試批號--', 
       key: 'lot', 
       type: 'select', 
       options: [
@@ -114,7 +114,16 @@ registerMock({
         { text: 'Pre成功,但有錯誤訊息', value: 'Pre_ok' },
         { text: 'Pre失敗', value: 'Pre_err' },
       ] 
-    }
+    },
+    {
+          label: 'Form 注入',
+          key: 'injectionDemo',
+          target: 'form', // 指定目標物件名稱
+          type: 'actions',
+          list: [
+            { text: '注入情境 1', value: _form.form1 }, // 改用 value
+          ]
+        }
   ],
   handlers: pageHandlers
 });
