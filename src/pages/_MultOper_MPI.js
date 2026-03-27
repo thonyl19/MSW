@@ -2,7 +2,7 @@ import { http, HttpResponse, delay, passthrough } from 'msw';
 import { mockConfig } from '../store.js';
 import { registerMock } from '../mock-entry.js';
 import { handleCustomResponse, sendResponse } from '../msw-utils.js';
-import { _tmpData, _case1, _case2 } from './_MultOper_MPI.data.js';
+import { _Save,_tmpData, _case1, _case2 } from './_MultOper_MPI.data.js';
 
 
 // 此頁面專用的 Mock 攔截邏輯
@@ -15,7 +15,6 @@ var _fn = {
             case 'case2':
                 return  _.get(_case2,name,null);
                 break;
-                
         }
         return null;
     }
@@ -24,8 +23,8 @@ var _fn = {
 // 此頁面專用的 Mock 攔截邏輯
 const pageHandlers = [
     http.post('*/WIP/LotEDCOffline/OffLineRecEDC_LotInfo', async ({ request }) => {
-        var r = _fn.getSrc(mockConfig.lot,"OffLineRecEDC_LotInfo");
-        return sendResponse({ mockConfig, data: r });
+        var data = _fn.getSrc(mockConfig.lot,"OffLineRecEDC_LotInfo");
+        return sendResponse({ mockConfig, data});
     }),
     http.post('*/WIP/LotEDCOffline/RecordOperSelectedChanged', async ({ request }) => {
         const bodyText = await request.text();
@@ -47,10 +46,9 @@ const pageHandlers = [
         return sendResponse({ mockConfig, data: r });
     }),
 
-    http.post('*/WIP/WIP/LotEDCOffline/MPI_Save', async ({ request }) => {
-        const bodyText = await request.text();
-        const params = new URLSearchParams(bodyText);
-        return sendResponse({ mockConfig, data: _tmpData.SubRecordOperSelectedChanged });
+    http.post('*/WIP/LotEDCOffline/MPI_Save', async ({ request }) => {
+        var data = _.get(_Save,mockConfig.save,null);
+        return sendResponse({ mockConfig, data});
     }),
 
     http.post('*/WIP/LotEDCOffline/SubRecordOperSelectedChanged', async ({ request }) => {
@@ -107,12 +105,14 @@ registerMock({
       ] 
     },
     { 
-      label: '機台載入', 
-      key: 'arg', 
+      label: '儲存', 
+      key: 'save', 
       type: 'select', 
       options: [
-        { text: '正常資料', value: 'default' },
-        { text: '無資料', value: 'no_data' }
+        { text: '', value: '' },
+        { text: 'default', value: 'default' },
+        { text: 'Pre成功,但有錯誤訊息', value: 'Pre_ok' },
+        { text: 'Pre失敗', value: 'Pre_err' },
       ] 
     }
   ],

@@ -3,43 +3,67 @@ autoSync: false
 updated: 2026-03-26
 ---
 
-# MSW Mock 專案 — 專案背景
+# MSW Mock 專案 — 專案核心記憶 (Project Context)
 
-## 專案目的
-提供一個獨立的 MSW (Mock Service Worker) 層，用於模擬 MES/WIP 系統的 API 回應，
-供前端開發與測試使用，不依賴後端環境。
+## 1. 專案目的
+提供一個獨立的 MSW (Mock Service Worker) 層，用於模擬 MES/WIP 系統的 API 回應，供前端開發與測試使用，不依賴後端環境。
 
-## 技術棧
-- **MSW**: ^2.12.10（Service Worker + HTTP interceptor）
-- **esbuild**: ^0.27.3（打包工具）
-- **Vue 2**: ^2.6.14（搭配主專案）
+## 2. 技術棧
+- **MSW**: ^2.12.10 (Service Worker + HTTP interceptor)
+- **esbuild**: ^0.27.3 (打包工具)
+- **Vue 2**: ^2.6.14 (Mock 控制面板)
 - **語言**: ES Module (`.js`)
+- **字體**: Google Fonts **Outfit** (300, 400, 600)
 
-## 核心目錄結構
+## 3. 核心架構 (Core Architecture)
+- **狀態管理**: `src/store.js`
+  - 管理全域變數 `mockConfig`，決定攔截行為（延遲、狀態碼）與 UI 即時渲染狀態。
+- **Mock 註冊與配置**: `src/mock-entry.js`
+  - 提供 `registerMock` 與 `updateConfig` API，支援業務頁面動態註冊情景。
+- **MSW 攔截層**: 
+  - `msw-loader.js`: 初始化 MSW Worker。
+  - `handlers.js`: 定義請求攔截的 URL 模式。
+  - `msw-utils.js`: 提供 `sendResponse` 工廠函數，整合延遲與狀態碼設定。
+- **互動控制面板**: `src/components/MockPanel.js`
+  - 基於 Vue 2 的 **Premium Glassmorphism** 風格面板，支援拖拽、動態渲染 UI。
+
+## 4. 目錄結構
 ```
 src/
-  handlers.js          # 全域 handler 入口
-  mock-entry.js        # registerMock() / UI 控制面板邏輯
-  msw-utils.js         # sendResponse() 等共用工具
-  store.js             # mockConfig (全域狀態: lot, arg …)
-  pages/               # 各頁面專屬的 Mock Handler + Data
-    _MultOper_MPI.js           # 攔截邏輯 (MPI 多工序)
-    _MultOper_MPI.data.js      # Mock 資料來源 (已抽離)
+  components/          # Vue 組件 (如 MockPanel.js)
+  pages/               # 業務分頁 Mock 邏輯
+    _MultOper_MPI.js           # 攔截邏輯
+    _MultOper_MPI.data.js      # 抽離的大型資料
     _SetUpEQP.js
-    _EDC.js
-    _Self_Main.js
+    ...
+  handlers.js          # 全域 handler 入口
+  mock-entry.js        # 註冊入口與 API
+  msw-utils.js         # 指標性工具函數
+  store.js             # mockConfig 全域狀態
+  msw-loader.js        # Worker 啟動器
 .agent/
   memory/              # AG Memory Bank
-  skills/              # AG Skills 定義
-  workflows/           # AG Workflow 定義
+  skills/              # AG Skills
+  workflows/           # AG Workflows
 ```
 
-## 設計慣例
-- 每個頁面 `.js` 透過 `registerMock()` 同時註冊 UI 控制與 handler。
-- Mock 資料若量大，抽離至同名 `.data.js`，以 ES Module `export` 方式提供。
-- `mockConfig` (store) 驅動 case 分支：`mockConfig.lot`、`mockConfig.arg` 等。
-- Build 產物同步至主專案 `wwwroot`（見 `sync_MSW.bat`）。
+## 5. UI/UX 與設計規範
+- **視覺風格**: 
+  - **毛玻璃 (Glassmorphism)**: `backdrop-filter: blur(20px) saturate(160%)`，細微白邊 `1px solid rgba(255, 255, 255, 0.08)`。
+  - **高對比度**: 標籤 `white`, 狀態值使用紫色調 `#b794f4`。
+- **互動特性**: 支援展開/收合/圖示化、側邊欄拖曳、座標持久化 (`sessionStorage`)。
+- **Mock 資料**: 大型資料務必抽離至同名 `.data.js` 並以 `export` 方式提供。
 
-## 對接主專案
+## 6. 模組摘要清單
+| 模組名稱 | 核心職責 | 關鍵依賴 |
+|---|---|---|
+| `store.js` | 全域狀態 (`mockConfig`) 管理 | `sessionStorage`, `Vue.observable` |
+| `mock-entry.js` | 插件註冊入口、表單注入 API | `store.js` |
+| `MockPanel.js` | 互動式 UI 控制面板 | `mockConfig`, Vue, Outfit Font |
+| `msw-utils.js` | 回應生成與延遲工廠 | `msw`, `mockConfig` |
+| `handlers.js` | URL 路由攔截定義 | `msw-utils.js` |
+| `msw-loader.js` | Service Worker 啟動器 | `msw` |
+
+---
+**對接主專案 (Genesis_MVC)**:
 - workerDirectory: `Q:\ZAC_Dev\Genesis_MVC\wwwroot`
-- 主專案為 ASP.NET MVC (Genesis_MVC)

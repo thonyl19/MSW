@@ -12,7 +12,6 @@ updated: 2026-03-26
 ## 🔲 待辦 / 可考慮
 - [ ] 對 `_SetUpEQP.js` 執行相同的資料抽離（估計規模相當）
 - [ ] 對 `_EDC.js` 執行資料抽離
-- [ ] 建立 `/sync-mem` workflow（目前 MSW workspace 缺少此 workflow）
 
 ## 里程碑
 | 項目 | 狀態 |

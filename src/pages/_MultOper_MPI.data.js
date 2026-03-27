@@ -1,3 +1,71 @@
+export var _Save={
+    default:{
+        "ID": "97bacf41-7cc2-476d-97fe-0101059fd02c",
+        "Success": true,
+        "Message": null,
+        "MessageList": [
+            
+        ],
+        "Redirect": null,
+        "Data": {
+            "Api_Pre": {
+            "trace_id": "843a2b0a-2cfe-4580-b209-c18dc83d9d1d",
+            "success": true,
+            "message": "",
+            "action": ""
+            }
+        },
+        "Exception": null,
+        "InnerResults": [
+            
+        ],
+        "Code": "000"
+    },
+    Pre_ok:{
+        "ID": "97bacf41-7cc2-476d-97fe-0101059fd02c",
+        "Success": true,
+        "Message": null,
+        "MessageList": [
+            
+        ],
+        "Redirect": null,
+        "Data": {
+            "Api_Pre": {
+            "trace_id": "843a2b0a-2cfe-4580-b209-c18dc83d9d1d",
+            "success": true,
+            "message": "(測試)Api 回應 success:true ,但有錯誤訊息",
+            "action": ""
+            }
+        },
+        "Exception": null,
+        "InnerResults": [
+            
+        ],
+        "Code": "000"
+    },
+    Pre_err:{
+        "ID": "04ca0c89-33e3-4cdd-b5b5-b27de9d3f846",
+        "Success": false,
+        "Message": "EdcOffline.Pre 發生錯誤",
+        "MessageList": [
+            
+        ],
+        "Redirect": null,
+        "Data": {
+            "Api_Pre": {
+            "trace_id": "843a2b0a-2cfe-4580-b209-c18dc83d9d1d",
+            "success": false,
+            "message": "(測試)Api 回應 success:false",
+            "action": ""
+            }
+        },
+        "Exception": null,
+        "InnerResults": [
+            
+        ],
+        "Code": "999"
+    },
+}
 export var _tmpData = {
     OperEdcCfg:{
     "ID": "d7cb2612-0c0c-4a97-845f-38b71e3b948f",
