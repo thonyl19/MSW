@@ -1,6 +1,4 @@
----
-autoSync: false
-updated: 2026-03-26
+updated: 2026-03-27
 ---
 
 # MSW Mock 專案 — 專案核心記憶 (Project Context)
@@ -52,6 +50,7 @@ src/
   - **毛玻璃 (Glassmorphism)**: `backdrop-filter: blur(20px) saturate(160%)`，細微白邊 `1px solid rgba(255, 255, 255, 0.08)`。
   - **高對比度**: 標籤 `white`, 狀態值使用紫色調 `#b794f4`。
 - **互動特性**: 支援展開/收合/圖示化、側邊欄拖曳、座標持久化 (`sessionStorage`)。
+  - **Select 優化**: 下拉選單支援「一鍵清除 (X)」功能，提升互動便利性。
 - **Mock 資料**: 大型資料務必抽離至同名 `.data.js` 並以 `export` 方式提供。
 
 ## 6. 模組摘要清單
