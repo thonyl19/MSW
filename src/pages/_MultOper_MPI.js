@@ -2,7 +2,7 @@ import { http, HttpResponse, delay, passthrough } from 'msw';
 import { mockConfig } from '../store.js';
 import { registerMock } from '../mock-entry.js';
 import { handleCustomResponse, sendResponse } from '../msw-utils.js';
-import { _Save,_tmpData, _case1, _case2, _form } from './_MultOper_MPI.data.js';
+import { _Save,_tmpData, _case1, _case2, _form, _inject } from './_MultOper_MPI.data.js';
 
 
 // 此頁面專用的 Mock 攔截邏輯

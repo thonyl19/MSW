@@ -2,12 +2,12 @@
 updated: 2026-03-27
 ---
 
-# 當前工作狀態
-
-- **MSW 熱重載 (Hot Reload) 實作與優化**
-  - `mock-entry.js`: 修正 `Invalid base URL` 問題，支援全路徑解析（./ 與 ../），確保 Blob URL 環境下依賴鏈正確更新。
-  - `MockPanel.js`: 為 Select 控制項實作「一鍵清除 (X)」按鈕與樣式。
-  - 驗證成功：`_MultOper_MPI.js` 修改 Label 後，點擊重載可正確反映在 UI。
+- **MSW 注入機制 (Injection) 重構**
+  - **架構更新**: 全面採用 `target` + `value` 結構，實作精確目標名稱比對。
+  - **強韌性**: 注入過程使用 `_.cloneDeep` 確保 Mock Data 不受污染，並加入 Vue 實體檢查 (Warn and Skip)。
+  - **直接注入 (Direct Injection)**: 面板實作主動 DOM 掃描，可透過 `__vue__` 二次偵測並直接注入，即使主頁面未掛載 Hook 亦可運作。
+  - **邏輯隔離**: 修正 `FILL_FORM` 與 `activePayload` 的側寫衝突，確保注入與 API 攔截互不影響。
 
 ## 未竟之志
-- 可考慮對 `_SetUpEQP.js`、`_EDC.js` 等其他頁面套用相同的資料抽離模式
+- 驗證「大數據量 (Stress Test)」在特定頁面下的效能反應。
+- 檢查 `_SetUpEQP.js` 等分頁是否需調整為新版注入格式。

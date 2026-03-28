@@ -24,6 +24,11 @@ updated: 2026-03-27
   - `msw-utils.js`: 提供 `sendResponse` 工廠函數，整合延遲與狀態碼設定。
 - **互動控制面板**: `src/components/MockPanel.js`
   - 基於 Vue 2 的 **Premium Glassmorphism** 風格面板，支援拖拽、動態渲染 UI。
+  - **直接注入模式 (Direct Injection)**: 主動遍歷 DOM 並透過 `__vue__` 屬性定位目標 Vue 實體，強制注入資料。
+- **資料注入機制**:
+  - `mock-entry.js` -> `useFormInjection()`: 提供組件「訂閱」模式，精確匹配 `target` 名稱。
+  - **數據完整性**: 注入過程強制使用 `_.cloneDeep`，防止頁面雙向綁定污染 Mock Data。
+  - **邏輯隔離**: 確保表單注入與 `activePayload` (API 回應覆寫) 互不干擾。
 
 ## 4. 目錄結構
 ```
@@ -57,8 +62,8 @@ src/
 | 模組名稱 | 核心職責 | 關鍵依賴 |
 |---|---|---|
 | `store.js` | 全域狀態 (`mockConfig`) 管理 | `sessionStorage`, `Vue.observable` |
-| `mock-entry.js` | 插件註冊入口、表單注入 API | `store.js` |
-| `MockPanel.js` | 互動式 UI 控制面板 | `mockConfig`, Vue, Outfit Font, `reloadAllMocks` |
+| `mock-entry.js` | 插件註冊入口、表單注入 API | `store.js`, `Vue.set`, `cloneDeep` |
+| `MockPanel.js` | 互動控制面板、直接注入搜尋 | `mockConfig`, Vue, `reloadAllMocks`, `Direct Injection` |
 | `msw-utils.js` | 回應生成與延遲工廠 | `msw`, `mockConfig` |
 | `handlers.js` | URL 路由攔截定義 | `msw-utils.js` |
 | `msw-loader.js` | Service Worker 啟動器、載入路徑記錄 | `msw`, `store.js` |

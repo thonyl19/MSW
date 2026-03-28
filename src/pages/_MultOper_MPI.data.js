@@ -1151,3 +1151,22 @@ export var _form = {
  form1:{"LOT":"JOSEPH_TEST_LAYER-02","WO":"JOSEPH_TEST_LAYER","OPER_SID":"GTI25092609482676057","ROUTE_VER_OPER_SID":"GTI25092610430277229","SUB_ROUTE_VER_OPER_SID":null,"UNIT":"PCS","QUANTITY":"20.000","EQP_SID":null,"COMMENT":null,"IsMustSelectedEqp":false,"Has_sub_record_oper":false}
 
 }
+
+
+export var _inject = {
+    form:{
+        "一階流程案例":{
+            LOT:"JOSEPH_TEST_LAYER-02",
+            WO:"JOSEPH_TEST_LAYER",
+            OPER_SID:"GTI25092609482676057",
+            ROUTE_VER_OPER_SID:"GTI25092610430277229",
+            SUB_ROUTE_VER_OPER_SID:null,
+            UNIT:"PCS",
+            QUANTITY:"20.000",
+            EQP_SID:null,
+            COMMENT:null,
+            IsMustSelectedEqp:false,
+            Has_sub_record_oper:false
+        }
+    },
+}

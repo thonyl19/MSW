@@ -298,21 +298,59 @@ export default {
     },
     triggerAction(action, control) {
         // [MTAS Task 1] 升級為 target + value 結構
-        // 1. 抓取目標對象 (從 control 層級)
         const target = control.target || 'form';
+        const data = action.value || {};
 
-        if (action.value) {
-            mockConfig.activePayload = action.value;
-        }
+        /**
+         * 🚀 [強力直接注入模式] 
+         * 此處嘗試直接從 DOM 中撈取 Vue 實體並進行操作
+         * 這是為了在主畫面沒有呼叫 useFormInjection 的情況下也能強制運作
+         */
+        this.$nextTick(() => {
+            try {
+                // 1. 嘗試尋找 Root 或具備該屬性的 Vue 實體
+                const searchRoots = ['#app', '.app-container', 'body > div'];
+                let targetInstance = null;
+                
+                for (const selector of searchRoots) {
+                    const el = document.querySelector(selector);
+                    if (el && el.__vue__) {
+                        // 遞迴尋找具備該 target 屬性的組件
+                        const findInTree = (v) => {
+                            if (v[target]) return v;
+                            for (const child of v.$children) {
+                                const found = findInTree(child);
+                                if (found) return found;
+                            }
+                            return null;
+                        };
+                        targetInstance = findInTree(el.__vue__);
+                        if (targetInstance) break;
+                    }
+                }
 
-        // 2. 觸發信號 -> 更新 lastAction
+                if (targetInstance) {
+                    console.log(`%c[MSW Direct Injection] 偵測到實體！正在主動注入至: ${target}`, 'color: #10b981; font-weight: bold;', targetInstance);
+                    // 使用 Vue.set 確保響應性
+                    Object.keys(data).forEach(key => {
+                        this.$set(targetInstance[target], key, _.cloneDeep(data[key]));
+                    });
+                } else {
+                    console.warn(`%c[MSW Direct Injection] 找不到任何具備 '${target}' 屬性的 Vue 組件。`, 'color: #f59e0b;');
+                }
+            } catch (err) {
+                console.error('[MSW Direct Injection] 強力注入發生錯誤:', err);
+            }
+        });
+
+        // 2. 原有的訊息發送機制 (保留供未來訂閱使用)
         const timestamp = Date.now();
         mockConfig.lastAction = {
             id: `${control.key}_${timestamp}`,
-            type: action.type || 'FILL_FORM', // 預設為 FILL_FORM
-            target, // 新增：指定目標對象名稱
+            type: action.type || 'FILL_FORM',
+            target,
             timestamp,
-            data: action.value || {}, // 強制使用 value, 不再支持 payload
+            data,
             metadata: action.metadata || {}
         };
         
