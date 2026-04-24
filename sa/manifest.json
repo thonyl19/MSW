@@ -1,32 +1,20 @@
 {
-  "project": "MSW Hot Reload Implementation",
-  "status": "Done",
-  "total_tasks": 4,
-  "completed_tasks": 4,
+  "goal": "實作 AI 小助手 Phase 2：基於 Driver.js 與 js-yaml 的指定加載導覽機制",
+  "status": "in_progress",
+  "created_at": "2026-03-30T14:40:00Z",
+  "updated_at": "2026-03-30T14:40:00Z",
   "tasks": [
     {
-      "id": "T001",
-      "name": "升級 Store 與註冊邏輯 (Store & Register Upgrade)",
-      "file": "task_001_store_upgrade.md",
-      "status": "Done"
+      "id": "task_001_walkthrough_poc",
+      "name": "建立 Driver.js 與 YAML 導覽基礎架構 POC",
+      "status": "pending",
+      "file": "task_001_walkthrough_poc.md"
     },
     {
-      "id": "T002",
-      "name": "調整 Loader 記錄路徑 (Loader Tracking)",
-      "file": "task_002_loader_tracking.md",
-      "status": "Done"
-    },
-    {
-      "id": "T003",
-      "name": "實作核心重填與重載邏輯 (Core Reload Logic)",
-      "file": "task_003_reload_logic.md",
-      "status": "Done"
-    },
-    {
-      "id": "T004",
-      "name": "MockPanel UI 集成與熱重載測試 (UI Integration)",
-      "file": "task_004_ui_integration.md",
-      "status": "Done"
+      "id": "task_002_explicit_loading",
+      "name": "實作前端依據 MSW 模式顯式指定加載 YAML",
+      "status": "pending",
+      "file": "task_002_explicit_loading.md"
     }
   ]
 }

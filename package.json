@@ -21,5 +21,9 @@
         "workerDirectory": [
             "Q:\\ZAC_Dev\\Genesis_MVC\\wwwroot"
         ]
+    },
+    "dependencies": {
+        "driver.js": "^1.4.0",
+        "js-yaml": "^4.1.1"
     }
 }

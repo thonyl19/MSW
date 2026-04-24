@@ -82,26 +82,32 @@ export const useFormInjection = (instance, formKey = 'form') => {
 };
 
 /**
- * 頁面 Mock 註冊入口
+ * 頁面 Mock 註冊入口 [Task 002 升級]
  */
-export const registerMock = (options) => {
+export const registerMock = async (options) => {
     const { title, controls, handlers: pageHandlers } = options;
     
-    // 自動確保有自定義 JSON 選項
-    const hasCustomJson = controls.some(c => c.key === 'customJson');
-    if (!hasCustomJson) {
-        controls.push({
-            label: '自訂回應 JSON', 
-            key: 'customJson',
-            type: 'json',
-            placeholder: '{"success": true, "data": {}}'
-        });
+    // 1. 偵測是否具備對應的 Data 檔案
+    let injectData = {};
+    try {
+        // 取得當前執行的路徑來推測 .data.js 的位置
+        const currentPath = mockConfig.loadedPages[mockConfig.loadedPages.length - 1];
+        if (currentPath) {
+            const dataPath = currentPath.replace('.js', '.data.js');
+            const dataModule = await import(`${dataPath}${dataPath.includes('?') ? '&' : '?'}t=${Date.now()}`);
+            if (dataModule && dataModule._inject) {
+                injectData = dataModule._inject;
+                console.log(`%c[MSW Auto-load] 已自動載入數據來源: ${title}.data.js`, 'color: #10b981;');
+            }
+        }
+    } catch (e) {
+        // 找不到 .data.js 是正常的，靜默跳過
     }
 
-    // 1. 註冊 UI 面板
-    registerPage(title, controls);
+    // 2. 註冊 UI 面板與注入數據
+    registerPage(title, controls, injectData);
     
-    // 2. 注入頁面專屬的重新定義 (優先權高於全域 handlers)
+    // 3. 注入頁面專屬的重新定義
     if (pageHandlers && pageHandlers.length > 0) {
         worker.use(...pageHandlers);
     }

@@ -1,9 +1,10 @@
-import { mockConfig } from '../store.js';
+import { mockConfig, saveCatch, loadCatch } from '../store.js';
 
 export default {
   name: 'MockPanel',
   template: `
   <div class="mock-panel-wrapper">
+    <!-- Floating Icon -->
     <div v-if="displayMode === 'icon'" 
          class="mock-floating-icon" 
          :style="iconStyle"
@@ -11,14 +12,19 @@ export default {
          @mouseenter="startHoverTimer"
          @mouseleave="clearHoverTimer"
          title="還原測試面板">🧪</div>
+    
+    <!-- Expanded Panel -->
     <div v-else ref="panel" class="mock-panel-container" :style="panelStyle">
+      <!-- Header Area -->
       <div class="mock-panel-header" @mousedown="startDrag">
         <span class="header-icon">🧪</span>
         <div class="header-title-container">
             <span class="header-title">{{ config.pageTitle || '測試面板' }}</span>
-            <span class="header-subtitle">MSW INTERACTIVE PANEL v2.0</span>
+            <span class="header-subtitle">MSW PANEL v3.5 / {{ config.activeSource }}</span>
         </div>
         <div class="header-actions">
+          <button class="action-btn" @click.stop="handleCatch" title="手動儲存快照 (Catch)">💾</button>
+          <button class="action-btn" @click.stop="handleClearCache" title="清除快照資料">🧹</button>
           <button class="action-btn reload-btn" 
                   :class="{ 'is-spinning': isReloading }" 
                   @click.stop="handleHotReload" 
@@ -26,80 +32,137 @@ export default {
           <button class="action-btn" @click.stop="minimizeToIcon">🗗</button>
         </div>
       </div>
+
+      <!-- Control Menu (Switch & Tabs) -->
+      <div class="mock-panel-menu">
+        <div class="menu-top-row">
+            <div class="mock-item main-switch">
+              <label class="switch-container">
+                <span class="switch-label">攔截: {{ config.isEnabled ? 'ON' : 'OFF' }}</span>
+                <input type="checkbox" v-model="config.isEnabled">
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <!-- [Task 004] Source Switcher -->
+            <div v-if="sourceList.length > 1" class="source-switcher">
+                <template v-if="sourceList.length === 2">
+                    <div class="radio-group">
+                        <label v-for="name in sourceList" :key="name" class="radio-label" :class="{ active: config.activeSource === name }">
+                            <input type="radio" :value="name" v-model="config.activeSource" @change="updateSource(name)">
+                            <span>{{ name }}</span>
+                        </label>
+                    </div>
+                </template>
+                <template v-else>
+                    <select v-model="config.activeSource" @change="updateSource(config.activeSource)" class="source-select">
+                        <option v-for="name in sourceList" :key="name" :value="name">{{ name }}</option>
+                    </select>
+                </template>
+            </div>
+        </div>
+
+        <div class="mock-tabs">
+          <div class="tab-item" :class="{ active: activeTab === 'msw' }" @click="activeTab = 'msw'">MSW</div>
+          <div class="tab-item" :class="{ active: activeTab === 'inject' }" @click="activeTab = 'inject'">Inject</div>
+        </div>
+      </div>
+
       <div class="mock-panel-body">
         <div class="mock-panel-content">
-          <div class="mock-item main-switch">
-            <label class="switch-container">
-              <span class="switch-label">啟用 MSW 攔截</span>
-              <input type="checkbox" v-model="config.isEnabled">
-              <span class="slider"></span>
-            </label>
-          </div>
-
-          <div class="divider"><span>基礎控制項 (Basic)</span></div>
-          
-          <!-- 全域 API 延遲控制 (Number Slider) -->
-          <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
-            <div class="label-row">
-                <label>API 延遲 (ms)</label>
-                <span class="value-badge">{{ config.apiDelay }}ms</span>
+          <!-- MSW Tab Content -->
+          <div v-show="activeTab === 'msw'">
+            <div class="divider"><span>基礎控制項 (Basic)</span></div>
+            
+            <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
+              <div class="label-row">
+                  <label>API 延遲 (ms)</label>
+                  <span class="value-badge">{{ config.apiDelay }}ms</span>
+              </div>
+              <input type="range" v-model.number="config.apiDelay" min="0" max="5000" step="100" class="numeric-slider">
             </div>
-            <input type="range" v-model.number="config.apiDelay" min="0" max="5000" step="100" class="numeric-slider">
-          </div>
 
-          <!-- 全域 API 狀態碼 (Select) -->
-          <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
-            <label>API 狀態碼模擬</label>
-            <div class="select-wrapper">
-              <select v-model.number="config.apiStatus" :disabled="!config.isEnabled">
-                <option :value="200">200 OK</option>
-                <option :value="401">401 Unauthorized</option>
-                <option :value="403">403 Forbidden</option>
-                <option :value="500">500 Server Error</option>
-              </select>
+            <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
+              <label>API 狀態碼模擬</label>
+              <div class="select-wrapper">
+                <select v-model.number="config.apiStatus" :disabled="!config.isEnabled">
+                  <option :value="200">200 OK</option>
+                  <option :value="401">401 Unauthorized</option>
+                  <option :value="403">403 Forbidden</option>
+                  <option :value="500">500 Server Error</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="divider"><span>動態業務控制 (Dynamic)</span></div>
+
+            <div v-for="control in config.controls" :key="control.key" class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
+              <label v-if="control.type !== 'actions'">{{ control.label }}</label>
+              <div :class="getInputWrapperClass(control)">
+                <template v-if="control.type === 'select'">
+                  <div class="select-group">
+                    <select v-model="config[control.key]" :disabled="!config.isEnabled">
+                      <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+                    </select>
+                    <button v-if="config[control.key] && config.isEnabled" 
+                            class="select-clear-btn" 
+                            @click="config[control.key] = ''"
+                            title="清除選擇">×</button>
+                  </div>
+                </template>
+                <template v-else-if="control.type === 'json' || control.type === 'textarea'">
+                  <textarea v-model="config[control.key]" :placeholder="control.placeholder || '請輸入內容...'" :disabled="!config.isEnabled" rows="3"></textarea>
+                </template>
+                <template v-else-if="control.type === 'boolean' || control.type === 'switch'">
+                  <label class="switch-container tiny">
+                    <input type="checkbox" v-model="config[control.key]" :disabled="!config.isEnabled">
+                    <span class="slider"></span>
+                  </label>
+                </template>
+                <template v-else-if="control.type === 'slider'">
+                  <input type="range" v-model.number="config[control.key]" :min="control.min || 0" :max="control.max || 100" :step="control.step || 1" :disabled="!config.isEnabled" class="numeric-slider">
+                </template>
+                <template v-else-if="control.type === 'actions'">
+                  <div class="action-button-group">
+                      <button v-for="action in control.list" :key="action.text" 
+                              class="mock-btn" 
+                              @click="triggerAction(action, control)"
+                              :disabled="!config.isEnabled">
+                          {{ action.text }}
+                      </button>
+                  </div>
+                </template>
+              </div>
             </div>
           </div>
 
-          <div class="divider"><span>動態業務控制 (Dynamic)</span></div>
+          <!-- Inject Tab Content (Task 005: Search) -->
+          <div v-show="activeTab === 'inject'">
+            <div class="search-container">
+                <input type="text" v-model="searchQuery" placeholder="搜尋目標或情境..." class="search-input">
+                <span v-if="searchQuery" class="clear-search" @click="searchQuery = ''">×</span>
+            </div>
 
-          <div v-for="control in config.controls" :key="control.key" class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
-            <label v-if="control.type !== 'actions'">{{ control.label }}</label>
-            <div :class="getInputWrapperClass(control)">
-              <template v-if="control.type === 'select'">
-                <div class="select-group">
-                  <select v-model="config[control.key]" :disabled="!config.isEnabled">
-                    <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
-                  </select>
-                  <button v-if="config[control.key] && config.isEnabled" 
-                          class="select-clear-btn" 
-                          @click="config[control.key] = ''"
-                          title="清除選擇">×</button>
+            <div v-if="!hasFilteredInjectData" class="empty-state">目前無符合搜尋條件的 Injection 資料</div>
+            <div v-else>
+              <div v-for="(cases, target) in filteredInjectData" :key="target" class="inject-target-group">
+                <div class="group-header" @click="toggleGroup(target)">
+                  <span class="arrow" :class="{ rotated: groupOpen[target] }">▶</span>
+                  <span class="target-name">Target: {{ target }}</span>
                 </div>
-              </template>
-              <template v-else-if="control.type === 'json' || control.type === 'textarea'">
-                <textarea v-model="config[control.key]" :placeholder="control.placeholder || '請輸入內容...'" :disabled="!config.isEnabled" rows="3"></textarea>
-              </template>
-              <template v-else-if="control.type === 'boolean' || control.type === 'switch'">
-                <label class="switch-container tiny">
-                  <input type="checkbox" v-model="config[control.key]" :disabled="!config.isEnabled">
-                  <span class="slider"></span>
-                </label>
-              </template>
-              <template v-else-if="control.type === 'slider'">
-                <input type="range" v-model.number="config[control.key]" :min="control.min || 0" :max="control.max || 100" :step="control.step || 1" :disabled="!config.isEnabled" class="numeric-slider">
-              </template>
-              <template v-else-if="control.type === 'actions'">
-                <div class="action-button-group">
-                    <button v-for="action in control.list" :key="action.text" 
-                            class="mock-btn" 
-                            @click="triggerAction(action, control)"
-                            :disabled="!config.isEnabled">
-                        {{ action.text }}
-                    </button>
+                <div v-show="groupOpen[target]" class="group-cases">
+                  <div v-for="(data, name) in cases" :key="name" 
+                       class="case-item" 
+                       @click="doInject(target, data, name)"
+                       :title="'點擊注入: ' + name">
+                    <span class="case-icon">📥</span>
+                    <span class="case-name">{{ name }}</span>
+                  </div>
                 </div>
-              </template>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -109,12 +172,15 @@ export default {
     return {
       config: mockConfig,
       displayMode: 'icon',
+      activeTab: 'msw',
+      searchQuery: '',
       position: { top: null, left: null, bottom: 20, right: 20 },
       iconAtTop: true,
       hoverTimer: null,
       dragging: false,
       rel: { x: 0, y: 0 },
-      isReloading: false
+      isReloading: false,
+      groupOpen: { form: true }
     };
   },
   computed: {
@@ -128,20 +194,77 @@ export default {
       return this.iconAtTop 
         ? { top: '20px', bottom: 'auto', right: '20px' }
         : { top: 'auto', bottom: '20px', right: '20px' };
+    },
+    sourceList() {
+        return Object.keys(this.config.sources);
+    },
+    injectData() {
+        const source = this.config.sources[this.config.activeSource];
+        return source ? (source.inject || {}) : {};
+    },
+    filteredInjectData() {
+        const query = this.searchQuery.toLowerCase().trim();
+        if (!query) return this.injectData;
+
+        const filtered = {};
+        Object.keys(this.injectData).forEach(target => {
+            const cases = this.injectData[target];
+            const matchingCases = {};
+            const targetMatches = target.toLowerCase().includes(query);
+            
+            Object.keys(cases).forEach(name => {
+                if (targetMatches || name.toLowerCase().includes(query)) {
+                    matchingCases[name] = cases[name];
+                }
+            });
+
+            if (Object.keys(matchingCases).length > 0) {
+                filtered[target] = matchingCases;
+                // 自動展開符合的內容
+                this.$set(this.groupOpen, target, true);
+            }
+        });
+        return filtered;
+    },
+    hasFilteredInjectData() {
+        return Object.keys(this.filteredInjectData).length > 0;
     }
   },
   created() {
     this.injectStyles();
+    // 1. 初始化控制項預設值 (若全局 State 尚未建立)
+    Object.keys(this.config.sources).forEach(title => {
+        this.config.sources[title].controls.forEach(c => {
+            if (this.config[c.key] === undefined && c.value !== undefined) {
+                this.$set(this.config, c.key, c.value);
+            }
+        });
+    });
+
+    // 2. 延遲載入快照以確保來源已註冊
+    setTimeout(() => {
+        const snapshot = loadCatch();
+        if (snapshot && snapshot.lastAction) {
+            console.log('%c[MSW Panel] Re-triggering last action...', 'color: #10b981;');
+            this.triggerAction({ 
+                text: 'Recovered Action', 
+                value: snapshot.lastAction.data 
+            }, { 
+                target: snapshot.lastAction.target 
+            });
+        }
+    }, 500);
   },
   mounted() {
     const pathKey = `mock-pos-${window.location.pathname.replace(/\//g, '_')}`;
     const saved = sessionStorage.getItem(pathKey) || sessionStorage.getItem('mock-panel-pos');
     if (saved) {
       try {
-        const { top, left, mode } = JSON.parse(saved);
+        const { top, left, mode, activeTab } = JSON.parse(saved);
         this.position.top = top;
         this.position.left = left;
         this.displayMode = mode || 'icon';
+        if (activeTab) this.activeTab = activeTab;
       } catch (e) {}
     }
     window.addEventListener('mousemove', this.onDrag);
@@ -153,136 +276,25 @@ export default {
   },
   methods: {
     injectStyles() {
-      if (document.getElementById('mock-panel-styles')) return;
-      const style = document.createElement('style');
-      style.id = 'mock-panel-styles';
-      style.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
-
-        .mock-panel-container {
-          position: fixed;
-          width: 320px;
-          background: rgba(15, 15, 25, 0.7);
-          backdrop-filter: blur(20px) saturate(160%);
-          -webkit-backdrop-filter: blur(20px) saturate(160%);
-          color: #ffffff;
-          border-radius: 20px;
-          font-family: 'Outfit', system-ui, -apple-system, sans-serif;
-          z-index: 999999;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          max-height: 85vh;
-        }
-
-        .mock-floating-icon {
-          position: fixed;
-          width: 60px;
-          height: 60px;
-          background: linear-gradient(135deg, rgba(114, 57, 234, 0.3), rgba(64, 37, 204, 0.4));
-          background: rgba(114, 57, 234, 0.25);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(114, 57, 234, 0.5);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          z-index: 999999;
-          font-size: 26px;
-          box-shadow: 0 8px 32px rgba(114, 57, 234, 0.2);
-          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                      background 0.3s ease,
-                      top 0.5s cubic-bezier(0.19, 1, 0.22, 1),
-                      bottom 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-        .mock-floating-icon:hover { transform: scale(1.15) rotate(12deg); background: rgba(114, 57, 234, 0.5); }
-
-        .mock-panel-header {
-          padding: 16px 20px;
-          display: flex;
-          align-items: center;
-          cursor: grab;
-          user-select: none;
-          background: rgba(255, 255, 255, 0.03);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .mock-panel-header:active { cursor: grabbing; }
-        
-        .header-icon { font-size: 20px; filter: drop-shadow(0 0 8px rgba(114, 57, 234, 0.6)); }
-        .header-title-container { flex: 1; margin-left: 14px; display: flex; flex-direction: column; }
-        .header-title { font-size: 16px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px; }
-        .header-subtitle { font-size: 9px; font-weight: 400; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
-        
-        .header-actions { display: flex; align-items: center; }
-        .action-btn { background: rgba(255, 255, 255, 0.08); border: none; color: white; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-left: 6px; }
-        .action-btn:hover { background: rgba(255, 255, 255, 0.15); transform: translateY(-1px); }
-        .reload-btn { color: #b794f4; }
-        .is-spinning { animation: mock-spin 0.8s linear infinite; pointer-events: none; opacity: 0.6; }
-        @keyframes mock-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        .mock-panel-body { overflow-y: auto; flex: 1; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
-        .mock-panel-body::-webkit-scrollbar { width: 5px; }
-        .mock-panel-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-
-        .mock-panel-content { padding: 20px; }
-        .mock-item { transition: opacity 0.3s ease; }
-        .mock-item.is-disabled { opacity: 0.25; filter: grayscale(1); pointer-events: none; }
-        
-        .mock-item label { display: block; font-size: 12px; font-weight: 600; color: rgba(255,255,255,1); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
-        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .label-row label { margin-bottom: 0; }
-        .value-badge { background: rgba(114, 57, 234, 0.2); color: #b794f4; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
-
-        .select-wrapper { position: relative; }
-        select, textarea { 
-          width: 100%; background: rgba(0, 0, 0, 0.3); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); 
-          padding: 10px 14px; border-radius: 12px; font-size: 14px; transition: all 0.3s; outline: none; box-sizing: border-box;
-        }
-        select:focus, textarea:focus { border-color: rgba(114, 57, 234, 0.5); box-shadow: 0 0 12px rgba(114, 57, 234, 0.15); background: rgba(0, 0, 0, 0.4); }
-        select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 18px; }
-        .select-group { position: relative; display: flex; align-items: center; width: 100%; }
-        .select-group select { padding-right: 36px; }
-        .select-clear-btn { 
-          position: absolute; right: 10px; background: rgba(255,255,255,0.1); border: none; 
-          color: rgba(255,255,255,0.7); width: 22px; height: 22px; border-radius: 50%; 
-          display: flex; align-items: center; justify-content: center; cursor: pointer;
-          font-size: 16px; transition: all 0.2s; z-index: 5;
-        }
-        .select-clear-btn:hover { background: rgba(255,255,255,0.25); color: #fff; }
-
-        .numeric-slider { -webkit-appearance: none; width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; outline: none; margin: 10px 0; }
-        .numeric-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #7239ea; border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(114, 57, 234, 0.4); border: 2px solid #fff; }
-
-        .main-switch {   padding:0px 5px; border-radius: 5px; border: 1px solid rgba(114, 57, 234, 0.2); }
-        .switch-container { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-        .switch-container input { display: none; }
-        .switch-label { font-size: 14px; color: #fff; font-weight: 500; }
-        .slider { position: relative; display: inline-block; width: 44px; height: 18px; background: rgba(255, 255, 255, 0.15); border-radius: 24px; transition: .4s; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px;  background: white; border-radius: 50%; transition: .4s; }
-        input:checked + .slider { background: #7239ea; }
-        input:checked + .slider:before { transform: translateX(20px); }
-        
-        .switch-container.tiny .slider { width: 34px; height: 18px; }
-        .switch-container.tiny .slider:before { height: 12px; width: 12px; left: 3px;  }
-        .switch-container.tiny input:checked + .slider:before { transform: translateX(16px); }
-
-        .divider { display: flex; align-items: center; margin: 24px 0 18px 0; }
-        .divider span { font-size: 15px; color: rgba(255,255,255,1); font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; margin-right: 15px; }
-        .divider:after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-
-        .action-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .mock-btn { background: rgba(114, 57, 234, 0.15); border: 1px solid rgba(114, 57, 234, 0.3); color: #fff; padding: 10px; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
-        .mock-btn:hover:not(:disabled) { background: rgba(114, 57, 234, 0.3); transform: translateY(-1px); border-color: rgba(114, 57, 234, 0.5); }
-        .mock-btn:active:not(:disabled) { transform: translateY(0); }
-      `;
-      document.head.appendChild(style);
+      const styleId = 'mock-panel-styles';
+      if (document.getElementById(styleId)) return;
+      
+      // 動態計算 CSS 路徑 (基於組件自身位置)
+      const cssUrl = new URL('./MockPanel.css', import.meta.url).href;
+      
+      const link = document.createElement('link');
+      link.id = styleId;
+      link.rel = 'stylesheet';
+      link.href = cssUrl;
+      document.head.appendChild(link);
+    },
+    updateSource(name) {
+        this.config.activeSource = name;
+        this.config.controls = this.config.sources[name].controls;
+        console.log(`%c[MSW] Active Source Changed: ${name}`, 'color: #7239ea; font-weight: bold;');
     },
     getInputWrapperClass(control) {
-      if (control.type === 'boolean' || control.type === 'switch') return 'switch-wrapper';
-      return 'input-wrapper';
+      return (control.type === 'boolean' || control.type === 'switch') ? 'switch-wrapper' : 'input-wrapper';
     },
     async handleHotReload() {
       if (this.isReloading) return;
@@ -291,31 +303,32 @@ export default {
         const { reloadAllMocks } = await import('../mock-entry.js');
         await reloadAllMocks();
       } catch (e) {
-        console.error('[MSW Panel] 熱重載失敗', e);
       } finally {
         setTimeout(() => { this.isReloading = false; }, 500);
       }
     },
+    handleCatch() { saveCatch(); },
+    handleClearCache() { 
+        const path = window.location.pathname;
+        sessionStorage.removeItem(`msw-catch-${path}`);
+        window.location.reload(); 
+    },
+    toggleGroup(target) {
+        this.$set(this.groupOpen, target, !this.groupOpen[target]);
+    },
+    doInject(target, data, name) {
+        this.triggerAction({ text: name, value: data }, { target });
+    },
     triggerAction(action, control) {
-        // [MTAS Task 1] 升級為 target + value 結構
         const target = control.target || 'form';
         const data = action.value || {};
-
-        /**
-         * 🚀 [強力直接注入模式] 
-         * 此處嘗試直接從 DOM 中撈取 Vue 實體並進行操作
-         * 這是為了在主畫面沒有呼叫 useFormInjection 的情況下也能強制運作
-         */
         this.$nextTick(() => {
             try {
-                // 1. 嘗試尋找 Root 或具備該屬性的 Vue 實體
                 const searchRoots = ['#app', '.app-container', 'body > div'];
                 let targetInstance = null;
-                
                 for (const selector of searchRoots) {
                     const el = document.querySelector(selector);
                     if (el && el.__vue__) {
-                        // 遞迴尋找具備該 target 屬性的組件
                         const findInTree = (v) => {
                             if (v[target]) return v;
                             for (const child of v.$children) {
@@ -328,39 +341,27 @@ export default {
                         if (targetInstance) break;
                     }
                 }
-
                 if (targetInstance) {
-                    console.log(`%c[MSW Direct Injection] 偵測到實體！正在主動注入至: ${target}`, 'color: #10b981; font-weight: bold;', targetInstance);
-                    // 使用 Vue.set 確保響應性
                     Object.keys(data).forEach(key => {
                         this.$set(targetInstance[target], key, _.cloneDeep(data[key]));
                     });
-                } else {
-                    console.warn(`%c[MSW Direct Injection] 找不到任何具備 '${target}' 屬性的 Vue 組件。`, 'color: #f59e0b;');
                 }
-            } catch (err) {
-                console.error('[MSW Direct Injection] 強力注入發生錯誤:', err);
-            }
+            } catch (err) {}
         });
-
-        // 2. 原有的訊息發送機制 (保留供未來訂閱使用)
-        const timestamp = Date.now();
-        mockConfig.lastAction = {
-            id: `${control.key}_${timestamp}`,
-            type: action.type || 'FILL_FORM',
-            target,
-            timestamp,
-            data,
-            metadata: action.metadata || {}
+        const actionKey = control.key || control.target || 'unknown';
+        mockConfig.lastAction = { 
+            id: `${actionKey}_${Date.now()}`, 
+            type: action.type || 'FILL_FORM', 
+            target, 
+            timestamp: Date.now(), 
+            data 
         };
-        
-        console.log(`%c[MSW] 觸發動作: ${action.text} (目標: ${target})`, 'color: #7239ea; font-weight: bold;');
     },
-    restorePanel() { this.displayMode = 'expanded'; this.clearHoverTimer(); this.saveState(); },
+    restorePanel() { this.displayMode = 'expanded'; this.saveState(); },
     minimizeToIcon() { this.displayMode = 'icon'; this.saveState(); },
     saveState() {
         const pathKey = `mock-pos-${window.location.pathname.replace(/\//g, '_')}`;
-        const state = JSON.stringify({ top: this.position.top, left: this.position.left, mode: this.displayMode });
+        const state = JSON.stringify({ top: this.position.top, left: this.position.left, mode: this.displayMode, activeTab: this.activeTab });
         sessionStorage.setItem(pathKey, state);
         sessionStorage.setItem('mock-panel-pos', state);
     },

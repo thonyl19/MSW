@@ -1,0 +1,37 @@
+{
+"goal": "MSW 注入功能與面板架構優化",
+"status": "In Progress",
+"tasks": [
+    {
+    "id": "001",
+    "name": "Store 層級升級 (Multi-source & Catch)",
+    "file": ".agent/tasks/task_001_store_upgrade.md",
+    "status": "Pending"
+    },
+    {
+    "id": "002",
+    "name": "入口點與資料自動偵測 (Auto-load)",
+    "file": ".agent/tasks/task_002_entry_auto_load.md",
+    "status": "Pending"
+    },
+    {
+    "id": "003",
+    "name": "面板 UI 重構 (Tabs & Layout)",
+    "file": ".agent/tasks/task_003_panel_ui_tabs.md",
+    "status": "Pending"
+    },
+    {
+    "id": "004",
+    "name": "動態來源切換器 (Source Switcher)",
+    "file": ".agent/tasks/task_004_source_switcher.md",
+    "status": "Pending"
+    },
+    {
+    "id": "005",
+    "name": "持久化邏輯整合 (Catch System)",
+    "file": ".agent/tasks/task_005_persistence_logic.md",
+    "status": "Pending"
+    }
+],
+"current_task": "001"
+}
