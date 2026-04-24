@@ -85,7 +85,7 @@ export const useFormInjection = (instance, formKey = 'form') => {
  * 頁面 Mock 註冊入口 [Task 002 升級]
  */
 export const registerMock = async (options) => {
-    const { title, controls, handlers: pageHandlers } = options;
+    const { title, controls, inject: manualInject = {}, handlers: pageHandlers } = options;
     
     // 1. 偵測是否具備對應的 Data 檔案
     let injectData = {};
@@ -104,8 +104,8 @@ export const registerMock = async (options) => {
         // 找不到 .data.js 是正常的，靜默跳過
     }
 
-    // 2. 註冊 UI 面板與注入數據
-    registerPage(title, controls, injectData);
+    // 2. 註冊 UI 面板與注入數據 (合併自動載入與手動傳入的注入內容)
+    registerPage(title, controls, { ...injectData, ...manualInject });
     
     // 3. 注入頁面專屬的重新定義
     if (pageHandlers && pageHandlers.length > 0) {
@@ -157,8 +157,10 @@ export const reloadAllMocks = async () => {
         for (const pageUrl of pages) {
             console.log(`%c[MSW] 正在重新解析: ${pageUrl}`, 'color: #b794f4');
             
-            // 抓取源碼 (加上 t 以確保抓到最新源碼)
-            const response = await fetch(`${pageUrl}${pageUrl.includes('?') ? '&' : '?'}t=${timestamp}`);
+            // 抓取源碼 (加上 t 以確保抓到最新源碼，並跳過 MSW 攔截)
+            const response = await fetch(`${pageUrl}${pageUrl.includes('?') ? '&' : '?'}t=${timestamp}`, {
+                headers: { 'x-msw-bypass': 'true' }
+            });
             let code = await response.text();
 
             /**
