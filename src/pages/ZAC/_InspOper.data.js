@@ -25,14 +25,65 @@ export var _config = {
   inject: {
     "Basic": {
       "Setting.CheckOutSet.OperInspInfo": {
-        "檢驗項目資訊-1": _form.form1
+        "檢驗項目資訊-1": _form.form1,
+        "複合情境回呼": ($d) => {
+            $d.Test = 'CallbackTriggered';
+            $d.Insp_Match = true;
+        }
       }
     },
     "Case1": {
       "Setting.CheckOutSet.OperInspInfo.Insp_Match": true,
       "Setting.CheckOutSet.OperInspInfo.Prod_Grading": true,
       "Setting.CheckOutSet.OperInspInfo.NCR_Hold": true,
-      "OperInspInfo.OperInspSet.Ext.SYSTEM_JUDGMENT": { "True": "T", "False": "F" }
+      "OperInspInfo.OperInspSet.Ext.SYSTEM_JUDGMENT": { "True": "T", "False": "F" },
+      "Setting.CheckOutSet.OperInspInfo.Fn_Inject": ($d) => {
+          $d.Test = 'SingleCallback';
+      }
+    },
+    "情境":{
+        "$data":{
+            _切換_系統判定($d,val){
+                var _obj = $d.OperInspInfo.OperInspSet.Ext;
+                if( val == null ) val = !(_obj.SYSTEM_JUDGMENT == "T");
+                _obj.SYSTEM_JUDGMENT = val?"T":"F";
+                return this;
+            },
+            _配合檢驗判定($d,val){
+                var _obj = $d.Setting.CheckOutSet.OperInspInfo;
+                val = val ?? !_obj.Insp_Match;
+                _obj.Insp_Match = val;
+                return this;
+            },
+            _等級判定($d,val){
+                var _obj = $d.Setting.CheckOutSet.OperInspInfo;
+                val = val ?? !_obj.Prod_Grading;
+                _obj.Prod_Grading = val;
+                return this;
+            },
+            _不合格強制扣留($d,val){
+                var _obj = $d.Setting.CheckOutSet.OperInspInfo;
+                val = val ?? !_obj.NCR_Hold;
+                _obj.NCR_Hold = val;
+                return this;
+            },
+            _判定結果($d,val){
+                var _obj = $d.OperInspInfo.WP_IPQC;
+                if( val == null ) val = !(_obj.QC_RESULT == "Accept");
+                _obj.QC_RESULT = val ? "Accept" :"Reject" ;
+                return this;
+            },
+            "全退-強制扣留(開"($d){
+                this._切換_系統判定($d,false)
+                    ._不合格強制扣留($d,true)
+                    ._判定結果($d,false);
+            },
+            "全退-強制扣留(關"($d){
+                this._切換_系統判定($d,false)
+                    ._不合格強制扣留($d,false)
+                    ._判定結果($d,false);
+            }
+        }
     }
   }
 };

@@ -56,7 +56,7 @@ export const useFormInjection = (instance, formKey = 'form') => {
                 const original = _.get(instance, formKey);
                 if (original) {
                     console.log(`%c[MSW Injection] 執行函式注入至 ${formKey}...`, 'color: #7239ea; font-weight: bold;');
-                    action.data.call(action.context || null, original);
+                    action.data(original);
                 }
                 return;
             }

@@ -194,7 +194,7 @@ export default {
                           <div v-for="opt in item.options" :key="opt.name" 
                                class="case-item" 
                                :title="typeof opt.data === 'function' ? '點擊執行回呼: ' + opt.name : '點擊注入: ' + opt.name"
-                               @click="doInject(item.path, opt.data, opt.name, opt.context)">
+                               @click="doInject(item.path, opt.data, opt.name)">
                             <div class="case-item-left">
                               <span class="case-icon">{{ typeof opt.data === 'function' ? '⚡' : '📥' }}</span>
                               <span class="case-name">{{ opt.name }}</span>
@@ -209,7 +209,7 @@ export default {
                         <div class="case-item-list">
                           <div class="case-item is-function-trigger" 
                                title="點擊執行回呼函式"
-                               @click="doInject(item.path, item.originalValue, '執行回呼', item.context)">
+                               @click="doInject(item.path, item.originalValue, '執行回呼')">
                             <div class="case-item-left">
                               <span class="case-icon">⚡</span>
                               <span class="case-name">執行回呼</span>
@@ -273,7 +273,6 @@ export default {
                 const value = groupContent[path];
                 let type = 'object';
                 let options = [];
-                let context = null;
                 
                 if (typeof value === 'boolean') {
                     type = 'bool';
@@ -281,13 +280,11 @@ export default {
                     type = 'array';
                 } else if (typeof value === 'function') {
                     type = 'function';
-                    context = groupContent;
                 } else if (typeof value === 'object' && value !== null) {
                     type = 'object';
                     options = Object.keys(value).map(name => ({
                         name,
-                        data: value[name],
-                        context: value
+                        data: value[name]
                     }));
                 }
                 
@@ -295,8 +292,7 @@ export default {
                     path,
                     type,
                     originalValue: value,
-                    options,
-                    context
+                    options
                 });
             });
             
@@ -482,8 +478,8 @@ export default {
     toggleGroup(target) {
         this.$set(this.groupOpen, target, !this.groupOpen[target]);
     },
-    doInject(target, data, name, context) {
-        this.triggerAction({ text: name, value: data, context }, { target });
+    doInject(target, data, name) {
+        this.triggerAction({ text: name, value: data }, { target });
     },
     triggerAction(action, control) {
         const target = control.target || 'form';
@@ -537,20 +533,7 @@ export default {
 
                 if (typeof action.value === 'function') {
                     console.log(`%c[MSW Panel] 執行函式回呼於 "${target}"`, 'color: #10b981;', targetObj);
-                    
-                    // 修正：如果 target 指向的就是這個 function 本身，我們應該取得它的父級物件作為第一個參數 $d
-                    let callbackTargetObj = targetObj;
-                    if (targetObj === action.value) {
-                        const parts = target.split('.');
-                        if (parts.length > 1) {
-                            const parentPath = parts.slice(0, -1).join('.');
-                            callbackTargetObj = _.get(targetInstance, parentPath);
-                        } else {
-                            callbackTargetObj = targetInstance.$data;
-                        }
-                    }
-                    
-                    action.value.call(action.context || null, callbackTargetObj);
+                    action.value(targetObj);
                     console.log(`%c[MSW Panel] 函式執行完成！`, 'color: #10b981; font-weight: bold;');
                 } else if (targetObj && typeof targetObj === 'object') {
                     console.log(`%c[MSW Panel] 直接注入到 "${target}"`, 'color: #10b981;', targetObj);
@@ -591,8 +574,7 @@ export default {
             type: action.type || 'FILL_FORM', 
             target, 
             timestamp: Date.now(), 
-            data: action.value,
-            context: action.context
+            data 
         });
         console.log(`%c[MSW Panel] lastAction 已更新 (廣播給 useFormInjection watcher)`, 'color: #3b82f6;', mockConfig.lastAction);
     },

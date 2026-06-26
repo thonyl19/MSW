@@ -1,10 +1,13 @@
-import './test-setup.js';
+﻿import './test-setup.js';
 import test from 'node:test';
 import assert from 'node:assert';
 import { setupServer } from 'msw/node';
 import Vue from 'vue';
 globalThis.Vue = Vue;
 import { mockConfig } from 'msw-store';
+import { useFormInjection } from '../src/mock-entry.js';
+
+
 
 
 // 載入我們的業務 Mock 處理器 (會觸發 registerMock，並保存 activeHandlers)
@@ -85,14 +88,56 @@ test('mockConfig 應正確加載並解析多群組 inject 巢狀結構與類型'
     assert.ok(source.inject.Basic['Setting.CheckOutSet.OperInspInfo']);
     assert.strictEqual(source.inject.Case1['Setting.CheckOutSet.OperInspInfo.Insp_Match'], true);
     
-    const ncrHold = source.inject.Case1['Setting.CheckOutSet.OperInspInfo.NCR_Hold'];
-    assert.ok(Array.isArray(ncrHold));
-    assert.strictEqual(ncrHold.length, 2);
-    assert.strictEqual(ncrHold[0], true);
-    assert.strictEqual(ncrHold[1], false);
+    // 驗證 NCR_Hold 已改為 bool
+    assert.strictEqual(source.inject.Case1['Setting.CheckOutSet.OperInspInfo.NCR_Hold'], true);
     
     assert.deepStrictEqual(
         source.inject.Case1['OperInspInfo.OperInspSet.Ext.SYSTEM_JUDGMENT'],
         { "True": "T", "False": "F" }
     );
+
+    // 驗證新增的 Fn_Inject 回呼函式
+    assert.strictEqual(typeof source.inject.Case1['Setting.CheckOutSet.OperInspInfo.Fn_Inject'], 'function');
+});
+
+// 新增測試：驗證 useFormInjection 當 action.data 是 function 時能正確執行，且能正確傳入 $data 與 $vm
+test('useFormInjection should execute callback function if action.data is a function', (t) => {
+    const mockInstance = {
+        form: {
+            testVal: 'Initial'
+        },
+        customProp: 'VmPropertyValue',
+        $watch(fn, cb) {
+            // 模擬 watch 回呼觸發
+            this.trigger = cb;
+            return () => {};
+        }
+    };
+    mockInstance.$data = mockInstance; // 模擬 $data
+
+    useFormInjection(mockInstance, 'form');
+
+    let receivedData = null;
+    let receivedVm = null;
+
+    // 模擬觸發廣播
+    const callbackFn = ($d, $data, $vm) => {
+        $d.testVal = 'TriggeredViaWatcher';
+        receivedData = $data;
+        receivedVm = $vm;
+        $data.form.extraVal = 'viaWatcherData';
+    };
+
+    mockInstance.trigger({
+        type: 'FILL_FORM',
+        target: 'form',
+        data: callbackFn
+    });
+
+    assert.strictEqual(mockInstance.form.testVal, 'TriggeredViaWatcher');
+    assert.strictEqual(mockInstance.form.extraVal, 'viaWatcherData');
+    assert.ok(receivedData);
+    assert.ok(receivedVm);
+    assert.strictEqual(receivedData, mockInstance.$data);
+    assert.strictEqual(receivedVm.customProp, 'VmPropertyValue');
 });
