@@ -32,7 +32,7 @@ export const useFormInjection = (instance, formKey = 'form') => {
     }
 
     // [DEBUG] 讓使用者能確認組件真的有跑進來註冊
-    console.log(`%c[MSW] >>> 填表監控註冊成功！目標物件: instance.${formKey}`, 'color: #3b82f6; font-weight: bold;', instance[formKey]);
+    console.log(`%c[MSW] >>> 填表監控註冊成功！目標物件: instance.${formKey}`, 'color: #3b82f6; font-weight: bold;', _.get(instance, formKey));
 
     const unwatch = instance.$watch(() => mockConfig.lastAction, (action) => {
         // [DEBUG] 這裡是注入動作觸發的入口
@@ -44,12 +44,10 @@ export const useFormInjection = (instance, formKey = 'form') => {
             // 如果目標不符，靜默跳過 (可能是有多個 formKey 在監聽)
             if (target !== formKey) return;
 
-            // 🔍 進入偵錯點
-            debugger; 
-
-            // 2. 檢查 Vue 實體物件是否存在
-            if (!(formKey in instance)) {
-                console.warn(`%c[MSW Injection Error] 找不到對象屬性 '${formKey}' 在目前組件實體中。`, 'color: #ef4444; font-weight: bold;', instance);
+            // 2. 以 _.get 支援巢狀路徑 (e.g. set_model.Setting.CheckOutSet.OperInspInfo)
+            const rootKey = formKey.split('.')[0];
+            if (instance[rootKey] === undefined) {
+                console.warn(`%c[MSW Injection Error] 找不到根屬性 '${rootKey}' 在目前組件實體中。`, 'color: #ef4444; font-weight: bold;', instance);
                 return;
             }
 
@@ -60,24 +58,38 @@ export const useFormInjection = (instance, formKey = 'form') => {
                 const cleanData = _.cloneDeep(action.data);
                 
                 /**
-                 * 4. 執行注入 (強化響應性)
-                 * 如果 Object.assign 沒反應，改用 Vue 2 推薦的物件替換方式
+                 * 4. 執行注入 (強化響應性) — 支援巢狀路徑
                  */
-                const original = instance[formKey];
+                const original = _.get(instance, formKey);
                 
                 // 方案 A: 局部覆蓋 (Vue.set 迴圈)
-                Object.keys(cleanData).forEach(key => {
-                    Vue.set(original, key, cleanData[key]);
-                });
-
-                // 方案 B: (備用) 如果需要整個物件替換，請改用 instance[formKey] = { ...original, ...cleanData };
+                if (original && typeof original === 'object') {
+                    Object.keys(cleanData).forEach(key => {
+                        Vue.set(original, key, cleanData[key]);
+                    });
+                } else {
+                    // 方案 B: 巢狀路徑建立
+                    let obj = instance;
+                    const pathParts = formKey.split('.');
+                    for (let i = 0; i < pathParts.length; i++) {
+                        const part = pathParts[i];
+                        if (i === pathParts.length - 1) {
+                            Vue.set(obj, part, cleanData);
+                        } else {
+                            if (obj[part] === undefined || obj[part] === null) {
+                                Vue.set(obj, part, {});
+                            }
+                            obj = obj[part];
+                        }
+                    }
+                }
 
                 console.log(`%c[MSW Injection] ${formKey} 注入成功！`, 'color: #10b981; font-weight: bold;');
             } catch (err) {
                 console.error(`[MSW Injection] 數據注入過程發生錯誤:`, err);
             }
         }
-    });
+    }, { deep: false });
     return unwatch;
 };
 

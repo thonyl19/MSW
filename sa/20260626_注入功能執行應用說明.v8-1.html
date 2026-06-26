@@ -1,0 +1,295 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSW 注入功能執行與應用說明文件 (v8.1)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft JhengHei';
+            line-height: 1.6;
+            color: #333;
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3, h4 {
+            color: #1a1a1a;
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 8px;
+        }
+        h1 {
+            font-size: 2.2em;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.6em;
+            margin-top: 30px;
+            color: #1e3a8a;
+            border-left: 5px solid #1e3a8a;
+            padding-left: 12px;
+        }
+        h3 {
+            font-size: 1.3em;
+            margin-top: 25px;
+            border-bottom: none;
+            color: #2563eb;
+        }
+        h4 {
+            font-size: 1.1em;
+            margin-top: 15px;
+            border-bottom: none;
+            color: #4b5563;
+        }
+        code {
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        pre {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid #1e293b;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #cbd5e1;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+        .highlight {
+            background-color: #fef08a;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: #854d0e;
+        }
+        .info-box {
+            background-color: #eff6ff;
+            border-left: 5px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-box {
+            background-color: #fffbeb;
+            border-left: 5px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #78350f;
+        }
+        .critical-box {
+            background-color: #fef2f2;
+            border-left: 5px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>MSW 注入功能執行與應用說明文件 (v8.1)</h1>
+    <p>本文件說明 MSW (Mock Service Worker) 測試面板中「資料注入功能 (Form Injection)」的架構、應用方式與開發配置指南。透過此功能，開發與測試人員可以在免手動打字的情況下，一鍵將模擬的表單資料填入 Vue 頁面組件中。</p>
+
+    <hr>
+
+    <h2>1. 核心注入模式</h2>
+    <p>MSW 面板目前支援兩種資料注入模式，分別針對「舊頁面相容」與「零改動頁面測試」：</p>
+
+    <h3>模式 A：直接注入模式 (Direct Injection Mode) - ✨ 推薦使用</h3>
+    <ul>
+        <li><strong>特性</strong>：<strong>主畫面完全不需撰寫任何註冊代碼</strong>，由 MockPanel 主動掃描與操縱 DOM。</li>
+        <li><strong>運作原理</strong>：當點擊面板上的注入項目時，<code>MockPanel</code> 會自動掃描常見的 Vue 根節點（如 <code>#app</code>、<code>.app-container</code> 等），透過 <code>el.__vue__</code> 遞迴尋找其子組件實例中，凡是含有指定屬性名稱（如 <code>form</code>）的對象。</li>
+        <li><strong>防禦性設計</strong>：
+            <ul>
+                <li><strong>深度拷貝</strong>：強制使用 <code>_.cloneDeep</code> 隔離資料，防止 Vue 組件雙向綁定修改原始 Mock 數據。</li>
+                <li><strong>響應性確保</strong>：遍歷屬性並使用 <code>Vue.set</code> (或 <code>this.$set</code>) 進行寫入，確保 Vue 2 能監聽到欄位變更並渲染回 UI。</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>模式 B：訂閱注入模式 (useFormInjection API)</h3>
+    <ul>
+        <li><strong>特性</strong>：由主頁面組件主動呼叫 API，訂閱全域狀態變更。</li>
+        <li><strong>適用場景</strong>：當頁面有多個獨立的表單實體，或者需要自訂複雜的注入前置/後置邏輯時。</li>
+        <li><strong>使用方式</strong>：
+            <p>在頁面組件的 <code>created</code> 或 <code>mounted</code> 週期中註冊：</p>
+            <pre><code>import { useFormInjection } from '@/MSW/mock-entry.js';
+
+export default {
+    data() {
+        return {
+            form: {
+                LOT: '',
+                WO: '',
+                QUANTITY: ''
+            }
+        };
+    },
+    mounted() {
+        // 掛載填表監控，預設會監聽 target: 'form' 並且寫入到 this.form 中
+        this.unwatchForm = useFormInjection(this, 'form');
+    },
+    beforeDestroy() {
+        // 銷毀時解除監聽
+        if (this.unwatchForm) this.unwatchForm();
+    }
+};</code></pre>
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>2. registerMock 注入項目寫法與範例說明</h2>
+    <p>在使用 <code>registerMock</code> 配置面板時，開發人員可以透過以下兩種方式宣告注入項目：</p>
+
+    <div class="info-box">
+        <strong>核心概念：</strong> 為了將注入按鈕正確地顯示在面板下方的 <strong>"Inject" 頁籤</strong>，注入項目必須在資料結構中與 <code>target</code> (目標 Vue 組件屬性名) 產生綁定，並遵循固定的類型設計。
+    </div>
+
+    <h3>方法一：在 <code>controls</code> 陣列中直接宣告 (Actions 按鈕組)</h3>
+    <p>在 <code>controls</code> 中宣告 <code>type: 'actions'</code> 的控制項。此配置會產生一個按鈕群組，點擊時會觸發資料注入：</p>
+
+    <pre><code>import { registerMock } from '../mock-entry.js';
+import { _form } from './_InspOper.data.js';
+
+registerMock({
+  title: '檢驗出站',
+  controls: [
+    {
+      label: '出站檢驗項目資訊',    // UI 顯示的分組標題
+      key: 'injectionDemo',       // 唯一的控制項 key
+      type: 'actions',            // 必須設定為 'actions' 才會渲染為按鈕群組
+      target: 'form',             // ⭐️ 重要：指定要注入的目標屬性名稱 (對應 Vue 實例中的 data 變數)
+      list: [
+        { 
+          text: '檢驗項目資訊-1', 
+          type: 'FILL_FORM',      // ⭐️ 必須為 'FILL_FORM'，系統才會判定為資料注入動作
+          value: _form.form1      // ⭐️ 注入的資料來源物件，必須使用 value 欄位 (舊版 payload 已廢棄)
+        }
+      ]
+    }
+  ]
+});</code></pre>
+
+    <div class="critical-box">
+        <strong>⚠️ 常見踩坑警告 (非常重要)：</strong>
+        <ul>
+            <li><strong>type 欄位填錯</strong>：在 <code>list</code> 子項目中，<code>type</code> 必須設定為 <code>'FILL_FORM'</code>。如果您誤填寫成自定義的字串（例如 <code>type: 'set_model.Setting...'</code> ），注入機制將<strong>無法識別</strong>該行為。此時按鈕會因為無法被路由到注入處理器，而錯誤地滯留在 "MSW" 基礎控制頁籤下！</li>
+            <li><strong>欄位名稱錯誤</strong>：注入資料必須寫在 <code>value</code> 欄位中。舊版程式所使用的 <code>payload</code> 已不再受支援，寫錯將導致無法讀取資料。</li>
+        </ul>
+    </div>
+
+    <h3>方法二：宣告在 <code>.data.js</code> 的 <code>_inject</code> 物件中 (自動偵測載入 - 推薦)</h3>
+    <p>這是最乾淨、最符合邏輯分離的方式。<code>registerMock</code> 內部會主動偵測與加載 <code>[Page].data.js</code> 中的 <code>_inject</code> 物件，並直接將其映射到 <strong>"Inject" 頁籤</strong>，連動搜尋與折疊機制。</p>
+
+    <h4>步驟 1. 在 <code>_InspOper.data.js</code> 中定義：</h4>
+    <pre><code>// ⭐️ 必須使用 export var _inject 導出，名稱不可變更
+export var _inject = {
+    // 第一層 Key 為注入的目標對象名稱 (例如 Vue data 中的 'form' 或 'queryForm')
+    form: {
+        // 第二層 Key 為情境名稱 (顯示在 Inject 頁籤的按鈕文字)
+        "檢驗項目資訊-1": { 
+            Insp_Match: false, 
+            NCR_Hold: false, 
+            Prod_Grading: false, 
+            EdcList: null, 
+            WP_IPQC_LOT: null 
+        },
+        "一般出站設定": { 
+            Insp_Match: true, 
+            NCR_Hold: false, 
+            Prod_Grading: true 
+        }
+    },
+    // 如果同頁面有另一個 target 叫 query
+    query: {
+        "依批號查詢": {
+            LOT_NO: "LOT123456"
+        }
+    }
+};</code></pre>
+
+    <h4>步驟 2. 在 <code>_InspOper.js</code> 中註冊：</h4>
+    <pre><code>import { registerMock } from '../mock-entry.js';
+import { pageHandlers } from './_InspOper.js';
+
+registerMock({
+  title: '檢驗出站',
+  controls: [
+    // 這裡只需要定義一般的 API 攔截開關與 Select，完全不用寫 actions 注入按鈕
+  ],
+  // 系統會自動解析同目錄下的 _InspOper.data.js 並加載其 _inject 到 Inject 頁籤中！
+  handlers: pageHandlers
+});</code></pre>
+
+    <hr>
+
+    <h2>3. 資料與目錄規範 (.Data.js)</h2>
+    <p>為了落實資料與邏輯分離，系統採用 <strong><code>[Page].js</code> ↔ <code>[Page].Data.js</code> 1:1 自動對應慣例</strong>。</p>
+
+    <h3>目錄結構範例</h3>
+    <pre><code>src/pages/
+├── _MultOper_MPI.js       # Mock 攔截與 UI 設定檔
+├── _MultOper_MPI.data.js  # 靜態模擬數據與注入情境宣告 (1:1 對應)</code></pre>
+
+    <hr>
+
+    <h2>4. MockPanel 使用指南 (UI 操作)</h2>
+    <ul>
+        <li><strong>開啟面板</strong>：點擊網頁右下角的 🧪 浮動按鈕展開測試面板。</li>
+        <li><strong>切換分頁</strong>：切換至下方 <strong>Inject</strong> 頁籤。</li>
+        <li><strong>多來源切換</strong>：若當前頁面載入了多個 Mock 來源，面板頂部會自動出現 Radio Button 或 Select 選單，切換後下方的注入項目會同步更新。</li>
+        <li><strong>搜尋過濾</strong>：在搜尋欄輸入關鍵字（例如「一階」），系統會即時篩選情境名稱與 Target，並<strong>自動展開</strong>對應的折疊區塊。</li>
+        <li><strong>執行注入</strong>：點擊任何一項情境（如 <code>📥 一階流程案例</code>），資料會即時注入並填入畫面表單中。</li>
+        <li><strong>快照持久化 (Catch)</strong>：點擊面板右上角的 💾 (Save Catch) 按鈕，可將當前的 API 開關、延遲、選項以及最後一次注入的狀態儲存於 <code>sessionStorage</code>，重整網頁後會自動還原。</li>
+    </ul>
+
+    <hr>
+
+    <h2>5. 常見問題與偵錯 (Troubleshooting)</h2>
+    <div class="warning-box">
+        <strong>Q：為什麼我的注入按鈕出現在 "MSW" 控制分頁，而不是 "Inject" 分頁？</strong><br>
+        <strong>答：</strong> 請檢查 <code>controls</code> 內 <code>list</code> 陣列項目的 <strong><code>type</code></strong>。如果您寫了自訂字串，或者是舊版未使用的設定，MockPanel 會因為判定不是標準的 <code>FILL_FORM</code> 注入動作，而將按鈕渲染在一般控制項區塊（即 MSW 分頁）。請改回 <code>type: 'FILL_FORM'</code>，或改將資料宣告在 <code>.data.js</code> 的 <code>_inject</code> 中。
+    </div>
+    <div class="info-box">
+        <strong>Q：點擊注入按鈕後，畫面上表單沒有任何變化？</strong><br>
+        1. <strong>檢查主畫面 Vue 元件的 data 命名</strong>：直接注入模式預設尋找 <code>form</code> 屬性。若您的頁面變數名為 <code>queryForm</code> 或 <code>submitData</code>，請確認 <code>.Data.js</code> 的 <code>_inject</code> 宣告中是否已正確對應。<br>
+        2. <strong>檢查 Console 警告</strong>：如果命名不符或元件中不存在該變數，Console 會輸出黃色告警：<code>[MSW Injection Error] 找不到對象屬性 'xxxx' 在目前組件實體中。</code> 請根據此警告修正 <code>target</code> 命名。
+    </div>
+    <div class="info-box">
+        <strong>Q：有些輸入框在注入後無法手動編輯，或編輯時會影響到 Mock 原始數據？</strong><br>
+        此問題已由 <strong><code>_.cloneDeep</code> 防禦性機制</strong> 徹底解決。注入時會切斷物件參照，若仍有異常，請確認頁面中是否有使用自訂的資料共享。
+    </div>
+
+</body>
+</html>

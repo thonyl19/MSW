@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MSW Loader - 自動化環境初始化 (安全性增強版)
  * 
  * 功用：
@@ -59,7 +59,10 @@
             "imports": {
                 "vue": vueUrl,
                 "msw": coreUrl,
-                "msw/browser": coreUrl
+                "msw/browser": coreUrl,
+                "msw-store": `${baseUrl}/store.js`,
+                "msw-entry": `${baseUrl}/mock-entry.js`,
+                "msw-utils": `${baseUrl}/msw-utils.js`
             }
         });
         document.head.appendChild(im);

@@ -1,3 +1,4 @@
+import Vue from 'vue';
 import { mockConfig, saveCatch, loadCatch } from '../store.js';
 
 export default {
@@ -322,15 +323,21 @@ export default {
     triggerAction(action, control) {
         const target = control.target || 'form';
         const data = action.value || {};
+
+        console.log(`%c[MSW Panel] doInject 觸發 → target: "${target}"`, 'color: #f59e0b; font-weight: bold;', data);
+
+        // ── 路徑 A：直接 DOM 搜尋注入 ──────────────────────────────
         this.$nextTick(() => {
             try {
                 const searchRoots = ['#app', '.app-container', 'body > div'];
                 let targetInstance = null;
+                const rootKey = target.split('.')[0];
+
                 for (const selector of searchRoots) {
                     const el = document.querySelector(selector);
                     if (el && el.__vue__) {
                         const findInTree = (v) => {
-                            if (v[target]) return v;
+                            if (v[rootKey] !== undefined) return v;
                             for (const child of v.$children) {
                                 const found = findInTree(child);
                                 if (found) return found;
@@ -338,24 +345,58 @@ export default {
                             return null;
                         };
                         targetInstance = findInTree(el.__vue__);
-                        if (targetInstance) break;
+                        if (targetInstance) {
+                            console.log(`%c[MSW Panel] DOM 搜尋成功 → 找到 rootKey: "${rootKey}"`, 'color: #10b981; font-weight: bold;', targetInstance);
+                            break;
+                        }
                     }
                 }
+
                 if (targetInstance) {
-                    Object.keys(data).forEach(key => {
-                        this.$set(targetInstance[target], key, _.cloneDeep(data[key]));
-                    });
+                    const targetObj = _.get(targetInstance, target);
+                    if (targetObj && typeof targetObj === 'object') {
+                        console.log(`%c[MSW Panel] 直接注入到 "${target}"`, 'color: #10b981;', targetObj);
+                        Object.keys(data).forEach(key => {
+                            this.$set(targetObj, key, _.cloneDeep(data[key]));
+                        });
+                        console.log(`%c[MSW Panel] 注入完成！`, 'color: #10b981; font-weight: bold;');
+                    } else {
+                        // 路徑不存在，遞迴建立父結構
+                        console.warn(`%c[MSW Panel] "${target}" 路徑不存在，嘗試建立...`, 'color: #f59e0b;');
+                        let obj = targetInstance;
+                        const pathParts = target.split('.');
+                        for (let i = 0; i < pathParts.length; i++) {
+                            const part = pathParts[i];
+                            if (i === pathParts.length - 1) {
+                                this.$set(obj, part, _.cloneDeep(data));
+                            } else {
+                                if (obj[part] === undefined || obj[part] === null) {
+                                    this.$set(obj, part, {});
+                                }
+                                obj = obj[part];
+                            }
+                        }
+                        console.log(`%c[MSW Panel] 路徑建立並注入完成！`, 'color: #10b981; font-weight: bold;');
+                    }
+                } else {
+                    console.warn(`%c[MSW Panel] 未找到包含 rootKey "${rootKey}" 的 Vue 實例！`, 'color: #ef4444; font-weight: bold;');
+                    console.warn('[MSW Panel] 請確認主頁面元件已呼叫 useFormInjection(this, \'' + target + '\') 或主頁面 data 中包含 ' + rootKey);
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error('[MSW Panel] triggerAction 發生錯誤:', err);
+            }
         });
+
+        // ── 路徑 B：透過 useFormInjection watcher 廣播 ─────────────
         const actionKey = control.key || control.target || 'unknown';
-        mockConfig.lastAction = { 
+        Vue.set(mockConfig, 'lastAction', { 
             id: `${actionKey}_${Date.now()}`, 
             type: action.type || 'FILL_FORM', 
             target, 
             timestamp: Date.now(), 
             data 
-        };
+        });
+        console.log(`%c[MSW Panel] lastAction 已更新 (廣播給 useFormInjection watcher)`, 'color: #3b82f6;', mockConfig.lastAction);
     },
     restorePanel() { this.displayMode = 'expanded'; this.saveState(); },
     minimizeToIcon() { this.displayMode = 'icon'; this.saveState(); },
