@@ -1,4 +1,4 @@
-import Vue from 'vue';
+﻿import Vue from 'vue';
 import { mockConfig, saveCatch, loadCatch } from '../store.js';
 
 export default {
@@ -137,30 +137,73 @@ export default {
             </div>
           </div>
 
-          <!-- Inject Tab Content (Task 005: Search) -->
+          <!-- Inject Tab Content -->
           <div v-show="activeTab === 'inject'">
             <div class="inject-actions-bar">
                 <span class="diagnose-icon-btn" @click="runDiagnostics" title="檢測頁面 Vue 結構">🩺</span>
             </div>
+            
             <div class="search-container">
-                <input type="text" v-model="searchQuery" placeholder="搜尋目標或情境..." class="search-input">
+                <input type="text" v-model="searchQuery" placeholder="搜尋 Group、路徑或情境..." class="search-input">
                 <span v-if="searchQuery" class="clear-search" @click="searchQuery = ''">×</span>
             </div>
 
-            <div v-if="!hasFilteredInjectData" class="empty-state">目前無符合搜尋條件的 Injection 資料</div>
+            <div v-if="Object.keys(filteredStructuredInjects).length === 0" class="empty-state">目前無符合搜尋條件的 Injection 資料</div>
             <div v-else>
-              <div v-for="(cases, target) in filteredInjectData" :key="target" class="inject-target-group">
-                <div class="group-header" @click="toggleGroup(target)">
-                  <span class="arrow" :class="{ rotated: groupOpen[target] }">▶</span>
-                  <span class="target-name">Target: {{ target }}</span>
+              <div v-for="(items, groupName) in filteredStructuredInjects" :key="groupName" class="inject-target-group">
+                <div class="group-header" @click="toggleGroup(groupName)">
+                  <span class="arrow" :class="{ rotated: groupOpen[groupName] }">▶</span>
+                  <span class="target-name">{{ groupName }}</span>
                 </div>
-                <div v-show="groupOpen[target]" class="group-cases">
-                  <div v-for="(data, name) in cases" :key="name" 
-                       class="case-item" 
-                       @click="doInject(target, data, name)"
-                       :title="'點擊注入: ' + name">
-                    <span class="case-icon">📥</span>
-                    <span class="case-name">{{ name }}</span>
+                
+                <div v-show="groupOpen[groupName]" class="group-cases new-structure">
+                  <!-- 第二層：Path 及其下的對應型態 UI -->
+                  <div v-for="item in items" :key="item.path" class="inject-path-item" :class="{ 'is-bool-item': item.type === 'bool' }">
+                    <div class="path-title" :title="item.path">
+                      {{ getShortTargetName(item.path) }}
+                      <span class="path-full-tooltip">{{ item.path }}</span>
+                    </div>
+                    
+                    <div class="path-control-wrapper">
+                      <!-- 1. bool 類型 -->
+                      <template v-if="item.type === 'bool'">
+                        <label class="switch-container tiny">
+                          <input type="checkbox" 
+                                 :checked="getDynamicStateValue(groupName, item.path)" 
+                                 @change="setDynamicStateValue(groupName, item.path, $event.target.checked)">
+                          <span class="slider"></span>
+                        </label>
+                      </template>
+                      
+                      <!-- 2. array 類型 -->
+                      <template v-else-if="item.type === 'array'">
+                        <div class="array-checkbox-group">
+                          <label v-for="val in item.originalValue" :key="String(val)" class="checkbox-label-inline">
+                            <input type="checkbox" 
+                                   :value="val" 
+                                   :checked="isTargetArrayChecked(groupName, item.path, val)"
+                                   @change="toggleArrayValue(groupName, item.path, val, $event.target.checked)">
+                            <span>{{ String(val) }}</span>
+                          </label>
+                        </div>
+                      </template>
+                      
+                      <!-- 3. object 類型 (按鈕卡片列表) -->
+                      <template v-else-if="item.type === 'object'">
+                        <div class="case-item-list">
+                          <div v-for="opt in item.options" :key="opt.name" 
+                               class="case-item" 
+                               :title="'點擊注入: ' + opt.name"
+                               @click="doInject(item.path, opt.data, opt.name)">
+                            <div class="case-item-left">
+                              <span class="case-icon">📥</span>
+                              <span class="case-name">{{ opt.name }}</span>
+                            </div>
+                            <span class="case-edit-btn" @click.stop="openJsonEditor(groupName, item.path, opt.name, opt.data)" title="編輯此情境數據">📝</span>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -184,7 +227,8 @@ export default {
       dragging: false,
       rel: { x: 0, y: 0 },
       isReloading: false,
-      groupOpen: { form: true }
+      groupOpen: { form: true },
+      dynamicState: {}
     };
   },
   computed: {
@@ -202,40 +246,120 @@ export default {
     sourceList() {
         return Object.keys(this.config.sources);
     },
-    injectData() {
+    structuredInjects() {
         const source = this.config.sources[this.config.activeSource];
-        return source ? (source.inject || {}) : {};
-    },
-    filteredInjectData() {
-        const query = this.searchQuery.toLowerCase().trim();
-        if (!query) return this.injectData;
-
-        const filtered = {};
-        Object.keys(this.injectData).forEach(target => {
-            const cases = this.injectData[target];
-            const matchingCases = {};
-            const targetMatches = target.toLowerCase().includes(query);
+        const rawInjects = source ? (source.inject || {}) : {};
+        const result = {};
+        
+        Object.keys(rawInjects).forEach(groupName => {
+            const groupContent = rawInjects[groupName] || {};
+            const items = [];
             
-            Object.keys(cases).forEach(name => {
-                if (targetMatches || name.toLowerCase().includes(query)) {
-                    matchingCases[name] = cases[name];
+            Object.keys(groupContent).forEach(path => {
+                const value = groupContent[path];
+                let type = 'object';
+                let options = [];
+                
+                if (typeof value === 'boolean') {
+                    type = 'bool';
+                } else if (Array.isArray(value)) {
+                    type = 'array';
+                } else if (typeof value === 'object' && value !== null) {
+                    type = 'object';
+                    options = Object.keys(value).map(name => ({
+                        name,
+                        data: value[name]
+                    }));
                 }
+                
+                items.push({
+                    path,
+                    type,
+                    originalValue: value,
+                    options
+                });
             });
-
-            if (Object.keys(matchingCases).length > 0) {
-                filtered[target] = matchingCases;
-                // 自動展開符合的內容
-                this.$set(this.groupOpen, target, true);
+            
+            if (items.length > 0) {
+                result[groupName] = items;
             }
         });
-        return filtered;
+        return result;
     },
-    hasFilteredInjectData() {
-        return Object.keys(this.filteredInjectData).length > 0;
+    filteredStructuredInjects() {
+        const query = this.searchQuery.toLowerCase().trim();
+        if (!query) return this.structuredInjects;
+        
+        const result = {};
+        Object.keys(this.structuredInjects).forEach(groupName => {
+            const items = this.structuredInjects[groupName];
+            const matchingItems = items.filter(item => {
+                const pathMatch = item.path.toLowerCase().includes(query);
+                const groupMatch = groupName.toLowerCase().includes(query);
+                const optionMatch = item.options.some(opt => opt.name.toLowerCase().includes(query));
+                return pathMatch || groupMatch || optionMatch;
+            });
+            
+            if (matchingItems.length > 0) {
+                result[groupName] = matchingItems;
+                this.$set(this.groupOpen, groupName, true);
+            }
+        });
+        return result;
     }
   },
   created() {
     this.injectStyles();
+
+    // 註冊全域 callback 供 JSON 編輯子視窗呼叫
+    window.__msw_update_inject_data__ = async (groupName, target, caseName, newData, writeToFile = false) => {
+        console.log(`%c[MSW Editor] 收到變更套用。群組: "${groupName}", 路徑: "${target}" -> "${caseName}"`, 'color: #7239ea; font-weight: bold;');
+        
+        const source = this.config.sources[this.config.activeSource];
+        if (source && source.inject && source.inject[groupName] && source.inject[groupName][target]) {
+            if (caseName) {
+                this.$set(source.inject[groupName][target], caseName, newData);
+            } else {
+                this.$set(source.inject[groupName], target, newData);
+            }
+            
+            // 立即以內存方式注入頁面
+            const targetVal = caseName ? source.inject[groupName][target] : newData;
+            this.injectValue(target, targetVal);
+            
+            // 如果使用者選擇寫入檔案
+            if (writeToFile) {
+                try {
+                    const response = await fetch('/__msw_write_file__', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            source: this.config.activeSource,
+                            groupName,
+                            target,
+                            caseName,
+                            data: newData
+                        })
+                    });
+                    if (response.ok) {
+                        console.log('%c[MSW Editor] 實體檔案寫入成功，準備熱重載...', 'color: #10b981;');
+                        await this.handleHotReload();
+                    } else {
+                        throw new Error(`Server responded with ${response.status}`);
+                    }
+                } catch (err) {
+                    console.warn('%c[MSW Editor] 無法自動寫入檔案，啟用 Fallback 提示...', 'color: #f59e0b;', err);
+                    const formattedJson = JSON.stringify(newData, null, 4);
+                    window.prompt(
+                        `[Fallback 提示] 本機 Dev Server 未啟動，無法自動寫入檔案。\n請複製下方 JSON 內容，手動覆寫到 ${this.config.activeSource}.data.js 中的對應位置：`,
+                        formattedJson
+                    );
+                }
+            }
+        } else {
+            console.error('[MSW Editor] 找不到對應的 inject 設定對象。');
+        }
+    };
     // 1. 初始化控制項預設值 (若全局 State 尚未建立)
     Object.keys(this.config.sources).forEach(title => {
         this.config.sources[title].controls.forEach(c => {
@@ -258,6 +382,8 @@ export default {
             });
         }
     }, 500);
+
+    this.initDynamicState();
   },
   mounted() {
     const pathKey = `mock-pos-${window.location.pathname.replace(/\//g, '_')}`;
@@ -295,7 +421,23 @@ export default {
     updateSource(name) {
         this.config.activeSource = name;
         this.config.controls = this.config.sources[name].controls;
+        this.initDynamicState();
         console.log(`%c[MSW] Active Source Changed: ${name}`, 'color: #7239ea; font-weight: bold;');
+    },
+    initDynamicState() {
+        const state = {};
+        const injects = this.structuredInjects;
+        Object.keys(injects).forEach(groupName => {
+            state[groupName] = {};
+            injects[groupName].forEach(item => {
+                if (item.type === 'bool') {
+                    state[groupName][item.path] = item.originalValue;
+                } else if (item.type === 'array') {
+                    state[groupName][item.path] = [];
+                }
+            });
+        });
+        this.dynamicState = state;
     },
     getInputWrapperClass(control) {
       return (control.type === 'boolean' || control.type === 'switch') ? 'switch-wrapper' : 'input-wrapper';
@@ -406,6 +548,161 @@ export default {
         } catch (err) {
             console.error('[MSW Diagnoser] 無法加載診斷模組:', err);
         }
+    },
+    openJsonEditor(groupName, target, caseName, data) {
+        const editorWin = window.open('', '_blank', 'width=600,height=550,scrollbars=yes,resizable=yes');
+        if (!editorWin) {
+            alert('彈窗被瀏覽器阻擋，請允許此網站的彈窗！');
+            return;
+        }
+        editorWin.document.write(`
+  <html>
+    <head>
+      <title>編輯情境數據 - ${caseName}</title>
+      <style>
+        body { background: #151521; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; margin: 0; }
+        .container { display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; padding-bottom: 40px; }
+        h3 { margin-top: 0; font-size: 16px; color: #b794f4; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .path-display { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 15px; word-break: break-all; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; }
+        textarea { flex: 1; min-height: 320px; background: #0f0f18; color: #a6e3a1; border: 1px solid rgba(114, 57, 234, 0.3); font-family: monospace; font-size: 14px; padding: 12px; border-radius: 8px; box-sizing: border-box; outline: none; transition: border-color 0.2s; }
+        textarea:focus { border-color: #7239ea; }
+        .btn-group { display: flex; justify-content: flex-end; margin-top: 15px; gap: 10px; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
+        .btn-save-ram { background: rgba(114, 57, 234, 0.15); color: #b794f4; border: 1px solid rgba(114, 57, 234, 0.3); }
+        .btn-save-ram:hover { background: rgba(114, 57, 234, 0.3); }
+        .btn-save-file { background: #7239ea; color: #ffffff; box-shadow: 0 4px 12px rgba(114,57,234,0.3); }
+        .btn-save-file:hover { background: #5d25cd; }
+        .btn-cancel { background: rgba(255,255,255,0.1); color: #ffffff; }
+        .btn-cancel:hover { background: rgba(255,255,255,0.2); }
+        .error-msg { color: #f38ba8; margin-top: 10px; font-size: 13px; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h3>📝 編輯情境數據 - ${caseName}</h3>
+        <div class="path-display">目標路徑: <strong>${target}</strong></div>
+        <textarea id="jsonText" spellcheck="false">${JSON.stringify(data, null, 2)}</textarea>
+        <div id="error" class="error-msg"></div>
+        <div class="btn-group">
+          <button class="btn-cancel" onclick="window.close()">取消</button>
+          <button class="btn-save-ram" onclick="applyChanges(false)">立即套用 (僅內存)</button>
+          <button class="btn-save-file" onclick="applyChanges(true)">覆寫檔案並重載 (API)</button>
+        </div>
+      </div>
+      <script>
+        function applyChanges(writeToFile) {
+          const text = document.getElementById('jsonText').value;
+          try {
+            const parsed = JSON.parse(text);
+            if (window.opener && !window.opener.closed) {
+              window.opener.__msw_update_inject_data__('${groupName}', '${target}', '${caseName}', parsed, writeToFile);
+            }
+            window.close();
+          } catch(e) {
+            document.getElementById('error').innerText = "JSON 格式錯誤: " + e.message;
+          }
+        }
+      </script>
+    </body>
+  </html>
+        `);
+        editorWin.document.close();
+    },
+    getShortTargetName(target) {
+        if (!target) return '';
+        const parts = target.split('.');
+        return parts[parts.length - 1];
+    },
+    injectValue(target, value) {
+        console.log(`%c[MSW Inject] 動態值注入 → target: "${target}"`, 'color: #f59e0b; font-weight: bold;', value);
+        try {
+            const searchRoots = ['#app', '#VueApp', '.app-container', 'body > div'];
+            let targetInstance = null;
+            const rootKey = target.split('.')[0];
+
+            for (const selector of searchRoots) {
+                const el = document.querySelector(selector);
+                if (el && el.__vue__) {
+                    const findInTree = (v) => {
+                        if (v[rootKey] !== undefined) return v;
+                        for (const child of v.$children) {
+                            const found = findInTree(child);
+                            if (found) return found;
+                        }
+                        return null;
+                    };
+                    targetInstance = findInTree(el.__vue__);
+                    if (targetInstance) {
+                        console.log(`%c[MSW Inject] DOM 搜尋成功 → 找到 rootKey: "${rootKey}"`, 'color: #10b981; font-weight: bold;', targetInstance);
+                        break;
+                    }
+                }
+            }
+
+            if (targetInstance) {
+                const pathParts = target.split('.');
+                let obj = targetInstance;
+                for (let i = 0; i < pathParts.length; i++) {
+                    const part = pathParts[i];
+                    if (i === pathParts.length - 1) {
+                        this.$set(obj, part, _.cloneDeep(value));
+                    } else {
+                        if (obj[part] === undefined || obj[part] === null) {
+                            this.$set(obj, part, {});
+                        }
+                        obj = obj[part];
+                    }
+                }
+                console.log(`%c[MSW Inject] 成功將值注入至 "${target}"`, 'color: #10b981; font-weight: bold;');
+            } else {
+                console.warn(`%c[MSW Inject] 未找到包含 rootKey "${rootKey}" 的 Vue 實例，無法同步！`, 'color: #ef4444; font-weight: bold;');
+            }
+        } catch (err) {
+            console.error('[MSW Inject] 注入時發生錯誤:', err);
+        }
+    },
+    getDynamicStateValue(groupName, path, defaultValue = false) {
+        if (!this.dynamicState[groupName]) {
+            this.$set(this.dynamicState, groupName, {});
+        }
+        if (this.dynamicState[groupName][path] === undefined) {
+            const items = this.structuredInjects[groupName] || [];
+            const item = items.find(i => i.path === path);
+            this.$set(this.dynamicState[groupName], path, item ? item.originalValue : defaultValue);
+        }
+        return this.dynamicState[groupName][path];
+    },
+    setDynamicStateValue(groupName, path, value) {
+        if (!this.dynamicState[groupName]) {
+            this.$set(this.dynamicState, groupName, {});
+        }
+        this.$set(this.dynamicState[groupName], path, value);
+        this.injectValue(path, value);
+    },
+    isTargetArrayChecked(groupName, path, val) {
+        if (!this.dynamicState[groupName]) {
+            this.$set(this.dynamicState, groupName, {});
+        }
+        if (!Array.isArray(this.dynamicState[groupName][path])) {
+            this.$set(this.dynamicState[groupName], path, []);
+        }
+        return this.dynamicState[groupName][path].includes(val);
+    },
+    toggleArrayValue(groupName, path, val, checked) {
+        if (!this.dynamicState[groupName]) {
+            this.$set(this.dynamicState, groupName, {});
+        }
+        if (!Array.isArray(this.dynamicState[groupName][path])) {
+            this.$set(this.dynamicState[groupName], path, []);
+        }
+        const arr = this.dynamicState[groupName][path];
+        if (checked) {
+            if (!arr.includes(val)) arr.push(val);
+        } else {
+            const idx = arr.indexOf(val);
+            if (idx > -1) arr.splice(idx, 1);
+        }
+        this.injectValue(path, arr);
     },
     restorePanel() { this.displayMode = 'expanded'; this.saveState(); },
     minimizeToIcon() { this.displayMode = 'icon'; this.saveState(); },
