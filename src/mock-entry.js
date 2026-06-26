@@ -30,7 +30,7 @@ export const useFormInjection = (instance, formKey = 'form') => {
         console.error('[MSW] useFormInjection 呼叫失敗：未傳入有效的 Vue 實體');
         return;
     }
-
+    debugger;
     // [DEBUG] 讓使用者能確認組件真的有跑進來註冊
     console.log(`%c[MSW] >>> 填表監控註冊成功！目標物件: instance.${formKey}`, 'color: #3b82f6; font-weight: bold;', _.get(instance, formKey));
 

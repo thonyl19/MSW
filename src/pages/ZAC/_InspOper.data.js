@@ -5,6 +5,6 @@ export var _tmpData = {
 };
 
 export var _form = {
- form1:{ "Insp_Match": false, "NCR_Hold": false, "Prod_Grading": false, "EdcList": null, "WP_IPQC_LOT": null, "title": null, "enable": false, "required": false, "CodeRule": null }
+ form1:{"Test":"A", "Insp_Match": false, "NCR_Hold": false, "Prod_Grading": false, "EdcList": null, "WP_IPQC_LOT": null, "title": null, "enable": false, "required": false, "CodeRule": null }
 
 }

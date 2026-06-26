@@ -126,3 +126,26 @@ select:focus, textarea:focus { border-color: rgba(114, 57, 234, 0.5); background
 .empty-state { text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.2); font-size: 12px; font-style: italic; }
 
 .action-button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.inject-actions-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+  padding-right: 4px;
+}
+.diagnose-icon-btn {
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+  user-select: none;
+  filter: drop-shadow(0 0 4px rgba(114, 57, 234, 0));
+}
+.diagnose-icon-btn:hover {
+  opacity: 1;
+  transform: scale(1.15) rotate(-10deg);
+  filter: drop-shadow(0 0 8px rgba(114, 57, 234, 0.8));
+}
+.diagnose-icon-btn:active {
+  transform: scale(0.95);
+}

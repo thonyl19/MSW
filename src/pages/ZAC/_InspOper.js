@@ -1,4 +1,4 @@
-﻿import { http, HttpResponse, delay } from 'msw';
+import { http, HttpResponse, delay } from 'msw';
 import { mockConfig } from 'msw-store';
 import { registerMock } from 'msw-entry';
 import { handleCustomResponse, sendResponse } from 'msw-utils';
@@ -33,7 +33,7 @@ registerMock({
     }
   ],
   inject: {
-    'set_model.Setting.CheckOutSet.OperInspInfo': {
+    'Setting.CheckOutSet.OperInspInfo': {
       '檢驗項目資訊-1': _form.form1
     }
   },
