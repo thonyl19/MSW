@@ -502,6 +502,7 @@ export default {
                 const el = document.querySelector(selector);
                 if (el && el.__vue__) {
                     const findInTree = (v) => {
+                        if (rootKey === '$vm' || rootKey === '$data') return v;
                         if (v[rootKey] !== undefined) return v;
                         for (const child of v.$children) {
                             const found = findInTree(child);
@@ -518,8 +519,16 @@ export default {
             }
 
             if (targetInstance) {
-                let targetObj = _.get(targetInstance, target);
-                if (targetObj === undefined || targetObj === null) {
+                let targetObj;
+                if (target === '$vm') {
+                    targetObj = targetInstance;
+                } else if (target === '$data') {
+                    targetObj = targetInstance.$data;
+                } else {
+                    targetObj = _.get(targetInstance, target);
+                }
+
+                if (target !== '$vm' && target !== '$data' && (targetObj === undefined || targetObj === null)) {
                     let obj = targetInstance;
                     const pathParts = target.split('.');
                     for (let i = 0; i < pathParts.length; i++) {

@@ -347,3 +347,78 @@ test('triggerAction should support context binding for mutual method invocation'
     assert.strictEqual(mockVueInstance.Setting.CheckOutSet.OperInspInfo.Insp_Match, true);
     assert.strictEqual(mockVueInstance.Setting.CheckOutSet.OperInspInfo.NCR_Hold, true);
 });
+
+// 測試 8：驗證當 target 為 "$data" 時，triggerAction 能正確匹配並將 Vue 實例的 $data 物件作為第一個參數 $d 傳入
+test('triggerAction should pass Vue.$data as $d when target is "$data"', (t) => {
+    const mockVueInstance = {
+        _isVue: true,
+        $data: {
+            testVal: 'original'
+        },
+        $set(obj, key, val) {
+            obj[key] = val;
+        }
+    };
+
+    globalThis.document = {
+        querySelector: () => ({
+            __vue__: mockVueInstance
+        })
+    };
+
+    let receivedD = null;
+    const testFn = ($d) => {
+        receivedD = $d;
+    };
+
+    const action = {
+        text: '測試 $data 注入',
+        value: testFn
+    };
+
+    const control = {
+        target: '$data'
+    };
+
+    MockPanel.methods.triggerAction.call(mockPanelInstance, action, control);
+
+    assert.strictEqual(receivedD, mockVueInstance.$data);
+});
+
+// 測試 9：驗證當 target 為 "$vm" 時，triggerAction 能正確匹配並將 Vue 實例本身作為第一個參數 $d 傳入
+test('triggerAction should pass Vue instance ($vm) as $d when target is "$vm"', (t) => {
+    const mockVueInstance = {
+        _isVue: true,
+        $data: {
+            testVal: 'original'
+        },
+        $set(obj, key, val) {
+            obj[key] = val;
+        }
+    };
+
+    globalThis.document = {
+        querySelector: () => ({
+            __vue__: mockVueInstance
+        })
+    };
+
+    let receivedD = null;
+    const testFn = ($d) => {
+        receivedD = $d;
+    };
+
+    const action = {
+        text: '測試 $vm 注入',
+        value: testFn
+    };
+
+    const control = {
+        target: '$vm'
+    };
+
+    MockPanel.methods.triggerAction.call(mockPanelInstance, action, control);
+
+    assert.strictEqual(receivedD, mockVueInstance);
+});
+

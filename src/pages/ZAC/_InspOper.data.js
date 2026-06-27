@@ -83,6 +83,11 @@ export var _config = {
                     ._不合格強制扣留($d,false)
                     ._判定結果($d,false);
             }
+        },
+        "$vm":{
+            _Test($d){
+                debugger
+            }
         }
     }
   }
