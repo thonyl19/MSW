@@ -30,6 +30,8 @@ export default {
                   :class="{ 'is-spinning': isReloading }" 
                   @click.stop="handleHotReload" 
                   title="熱重載 Mock 數據">🔄</button>
+          <!-- Relocated Diagnose Button in Header Actions (Only shows on Inject Tab) -->
+          <button v-if="activeTab === 'inject'" class="action-btn diagnose-action-btn" @click.stop="runDiagnostics" title="檢測頁面 Vue 結構">🩺</button>
           <button class="action-btn" @click.stop="minimizeToIcon">🗗</button>
         </div>
       </div>
@@ -37,117 +39,116 @@ export default {
       <!-- Control Menu (Switch & Tabs) -->
       <div class="mock-panel-menu">
         <div class="menu-top-row">
-            <div class="mock-item main-switch">
+            <div class="main-switch">
+              <span class="switch-label">攔截</span>
               <label class="switch-container">
-                <span class="switch-label">攔截: {{ config.isEnabled ? 'ON' : 'OFF' }}</span>
                 <input type="checkbox" v-model="config.isEnabled">
                 <span class="slider"></span>
               </label>
             </div>
             
-            <!-- [Task 004] Source Switcher -->
-            <div v-if="sourceList.length > 1" class="source-switcher">
-                <template v-if="sourceList.length === 2">
-                    <div class="radio-group">
-                        <label v-for="name in sourceList" :key="name" class="radio-label" :class="{ active: config.activeSource === name }">
-                            <input type="radio" :value="name" v-model="config.activeSource" @change="updateSource(name)">
-                            <span>{{ name }}</span>
-                        </label>
-                    </div>
-                </template>
-                <template v-else>
-                    <select v-model="config.activeSource" @change="updateSource(config.activeSource)" class="source-select">
-                        <option v-for="name in sourceList" :key="name" :value="name">{{ name }}</option>
-                    </select>
-                </template>
+            <!-- Tab Switcher (Pill style radio group) -->
+            <div class="tab-switcher">
+                <div class="radio-group">
+                    <label class="radio-label" :class="{ active: activeTab === 'msw' }" @click="activeTab = 'msw'">
+                        <span>MSW</span>
+                    </label>
+                    <label class="radio-label" :class="{ active: activeTab === 'inject' }" @click="activeTab = 'inject'">
+                        <span>Inject</span>
+                    </label>
+                </div>
             </div>
-        </div>
-
-        <div class="mock-tabs">
-          <div class="tab-item" :class="{ active: activeTab === 'msw' }" @click="activeTab = 'msw'">MSW</div>
-          <div class="tab-item" :class="{ active: activeTab === 'inject' }" @click="activeTab = 'inject'">Inject</div>
         </div>
       </div>
 
+      <!-- Scrollable Panel Body -->
       <div class="mock-panel-body">
-        <div class="mock-panel-content">
-          <!-- MSW Tab Content -->
-          <div v-show="activeTab === 'msw'">
-            <div class="divider"><span>基礎控制項 (Basic)</span></div>
-            
-            <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
-              <div class="label-row">
-                  <label>API 延遲 (ms)</label>
-                  <span class="value-badge">{{ config.apiDelay }}ms</span>
-              </div>
-              <input type="range" v-model.number="config.apiDelay" min="0" max="5000" step="100" class="numeric-slider">
-            </div>
-
-            <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
-              <label>API 狀態碼模擬</label>
-              <div class="select-wrapper">
-                <select v-model.number="config.apiStatus" :disabled="!config.isEnabled">
-                  <option :value="200">200 OK</option>
-                  <option :value="401">401 Unauthorized</option>
-                  <option :value="403">403 Forbidden</option>
-                  <option :value="500">500 Server Error</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="divider"><span>動態業務控制 (Dynamic)</span></div>
-
-            <div v-for="control in config.controls" :key="control.key" class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
-              <label v-if="control.type !== 'actions'">{{ control.label }}</label>
-              <div :class="getInputWrapperClass(control)">
-                <template v-if="control.type === 'select'">
-                  <div class="select-group">
-                    <select v-model="config[control.key]" :disabled="!config.isEnabled">
-                      <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
-                    </select>
-                    <button v-if="config[control.key] && config.isEnabled" 
-                            class="select-clear-btn" 
-                            @click="config[control.key] = ''"
-                            title="清除選擇">×</button>
-                  </div>
-                </template>
-                <template v-else-if="control.type === 'json' || control.type === 'textarea'">
-                  <textarea v-model="config[control.key]" :placeholder="control.placeholder || '請輸入內容...'" :disabled="!config.isEnabled" rows="3"></textarea>
-                </template>
-                <template v-else-if="control.type === 'boolean' || control.type === 'switch'">
-                  <label class="switch-container tiny">
-                    <input type="checkbox" v-model="config[control.key]" :disabled="!config.isEnabled">
-                    <span class="slider"></span>
-                  </label>
-                </template>
-                <template v-else-if="control.type === 'slider'">
-                  <input type="range" v-model.number="config[control.key]" :min="control.min || 0" :max="control.max || 100" :step="control.step || 1" :disabled="!config.isEnabled" class="numeric-slider">
-                </template>
-                <template v-else-if="control.type === 'actions'">
-                  <div class="action-button-group">
-                      <button v-for="action in control.list" :key="action.text" 
-                              class="mock-btn" 
-                              @click="triggerAction(action, control)"
-                              :disabled="!config.isEnabled">
-                          {{ action.text }}
-                      </button>
-                  </div>
-                </template>
-              </div>
+        <!-- 1. MSW Tab Pane (Scrolls Internally) -->
+        <div id="mswPane" class="tab-pane" :class="{ active: activeTab === 'msw' }">
+          <!-- Fallback Source Switcher inside MSW Tab if multiple pages exist -->
+          <div v-if="sourceList.length > 1" class="mock-item">
+            <label>切換資料來源</label>
+            <div class="select-wrapper">
+              <select v-model="config.activeSource" @change="updateSource(config.activeSource)">
+                <option v-for="name in sourceList" :key="name" :value="name">{{ name }}</option>
+              </select>
             </div>
           </div>
 
-          <!-- Inject Tab Content -->
-          <div v-show="activeTab === 'inject'">
-            <div class="inject-actions-bar">
-                <span class="diagnose-icon-btn" @click="runDiagnostics" title="檢測頁面 Vue 結構">🩺</span>
+          <div class="divider"><span>基礎控制項 (Basic)</span></div>
+          
+          <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
+            <div class="label-row">
+                <label>API 延遲 (ms)</label>
+                <span class="value-badge">{{ config.apiDelay }}ms</span>
             </div>
-            
-            <div class="search-container">
-                <input type="text" v-model="searchQuery" placeholder="搜尋 Group、路徑或情境..." class="search-input">
-                <span v-if="searchQuery" class="clear-search" @click="searchQuery = ''">×</span>
-            </div>
+            <input type="range" v-model.number="config.apiDelay" min="0" max="5000" step="100" class="numeric-slider">
+          </div>
 
+          <div class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
+            <label>API 狀態碼模擬</label>
+            <div class="select-wrapper">
+              <select v-model.number="config.apiStatus" :disabled="!config.isEnabled">
+                <option :value="200">200 OK</option>
+                <option :value="401">401 Unauthorized</option>
+                <option :value="403">403 Forbidden</option>
+                <option :value="500">500 Server Error</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="divider"><span>動態業務控制 (Dynamic)</span></div>
+
+          <div v-for="control in config.controls" :key="control.key" class="mock-item" :class="{ 'is-disabled': !config.isEnabled }">
+            <label v-if="control.type !== 'actions'">{{ control.label }}</label>
+            <div :class="getInputWrapperClass(control)">
+              <template v-if="control.type === 'select'">
+                <div class="select-group">
+                  <select v-model="config[control.key]" :disabled="!config.isEnabled">
+                    <option v-for="opt in control.options" :key="opt.value" :value="opt.value">{{ opt.text }}</option>
+                  </select>
+                  <button v-if="config[control.key] && config.isEnabled" 
+                          class="select-clear-btn" 
+                          @click="config[control.key] = ''"
+                          title="清除選擇">×</button>
+                </div>
+              </template>
+              <template v-else-if="control.type === 'json' || control.type === 'textarea'">
+                <textarea v-model="config[control.key]" :placeholder="control.placeholder || '請輸入內容...'" :disabled="!config.isEnabled" rows="3"></textarea>
+              </template>
+              <template v-else-if="control.type === 'boolean' || control.type === 'switch'">
+                <label class="switch-container tiny">
+                  <input type="checkbox" v-model="config[control.key]" :disabled="!config.isEnabled">
+                  <span class="slider"></span>
+                </label>
+              </template>
+              <template v-else-if="control.type === 'slider'">
+                <input type="range" v-model.number="config[control.key]" :min="control.min || 0" :max="control.max || 100" :step="control.step || 1" :disabled="!config.isEnabled" class="numeric-slider">
+              </template>
+              <template v-else-if="control.type === 'actions'">
+                <div class="action-button-group">
+                    <button v-for="action in control.list" :key="action.text" 
+                            class="mock-btn" 
+                            @click="triggerAction(action, control)"
+                            :disabled="!config.isEnabled">
+                        {{ action.text }}
+                    </button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Inject Tab Pane (Only options list scrolls, search stays fixed) -->
+        <div id="injectPane" class="tab-pane" :class="{ active: activeTab === 'inject' }">
+          <!-- Fixed Search Input (Scoped inside Inject Tab Pane) -->
+          <div class="search-container">
+              <input type="text" v-model="searchQuery" placeholder="搜尋 Group、路徑或情境..." class="search-input">
+              <span v-if="searchQuery" class="clear-search" @click="searchQuery = ''">×</span>
+          </div>
+          
+          <!-- Scrollable Options List -->
+          <div class="inject-list-scroll">
             <div v-if="Object.keys(filteredStructuredInjects).length === 0" class="empty-state">目前無符合搜尋條件的 Injection 資料</div>
             <div v-else>
               <div v-for="(items, groupName) in filteredStructuredInjects" :key="groupName" class="inject-target-group">
@@ -223,8 +224,8 @@ export default {
               </div>
             </div>
           </div>
-
         </div>
+
       </div>
     </div>
   </div>

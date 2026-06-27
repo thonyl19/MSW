@@ -1,0 +1,566 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MSW Panel 優化樣板 - 亮色側邊抽屜毛玻璃 (Light Glassmorphic Sidebar Drawer)</title>
+  <style>
+    /* Reset & CSS variables */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      width: 100vw;
+      height: 100vh;
+      background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920');
+      background-size: cover;
+      background-position: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* Fixed drawer sticking to the right with horizontal resizing */
+    .mock-panel-sidebar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 500px;
+      height: 100vh;
+      min-width: 400px;
+      max-width: 80vw;
+      
+      /* Glassmorphism configuration (light) */
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(35px) saturate(220%);
+      -webkit-backdrop-filter: blur(35px) saturate(220%);
+      
+      border-left: 1px solid rgba(255, 255, 255, 0.4);
+      color: #1e1e2f;
+      box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15);
+      
+      display: flex;
+      flex-direction: column;
+      
+      /* Resizable horizontally (requires drag handle on the left edge) */
+      resize: horizontal;
+      overflow: hidden;
+      
+      /* Since CSS resize moves the right border, but we stick to the right, we reverse direction in JS or use negative transform */
+      /* Here we place handle on the left and resize cleanly */
+    }
+
+    /* Header Styling */
+    .mock-panel-header {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .header-icon {
+      font-size: 1.5rem;
+      margin-right: 12px;
+      filter: drop-shadow(0 0 8px rgba(114, 57, 234, 0.4));
+    }
+
+    .header-title-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e1e2f;
+    }
+
+    .header-subtitle {
+      font-size: 0.65rem;
+      font-weight: 400;
+      color: rgba(30, 30, 47, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      background: rgba(0, 0, 0, 0.06);
+      border: none;
+      color: #1e1e2f;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: rgba(0, 0, 0, 0.15);
+      transform: translateY(-1px);
+    }
+
+    /* Switcher & Tabs area */
+    .mock-panel-menu {
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+    }
+
+    .menu-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .main-switch {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(114, 57, 234, 0.15);
+    }
+
+    .switch-label {
+      font-size: 1.75rem; /* User requirement 1 */
+      font-weight: 600;
+      margin-right: 12px;
+      color: #1e1e2f;
+    }
+
+    .switch-container {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
+    }
+
+    .switch-container input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.1);
+      transition: .3s;
+      border-radius: 24px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    input:checked + .slider {
+      background-color: #7239ea;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    .radio-group {
+      display: flex;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .radio-label {
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-size: 1.75rem; /* User requirement 1 */
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(30, 30, 47, 0.6);
+    }
+
+    .radio-label.active {
+      background: rgba(114, 57, 234, 0.85);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(114, 57, 234, 0.2);
+    }
+
+    /* Body/Content Sizing */
+    .mock-panel-body {
+      overflow-y: auto;
+      flex: 1;
+      padding: 12px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    }
+
+    /* Search input style */
+    .search-container {
+      position: relative;
+      margin-bottom: 8px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      padding: 8px 12px;
+      border-radius: 12px;
+      color: #1e1e2f;
+      font-size: 1.75rem; /* User requirement 1 */
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: rgba(114, 57, 234, 0.5);
+      background: rgba(255, 255, 255, 0.45);
+    }
+
+    /* Target Groups & Nested details */
+    .inject-target-group {
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+    }
+
+    .group-header {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.1);
+      transition: background 0.2s;
+    }
+
+    .group-header:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .group-header .arrow {
+      font-size: 1.1rem;
+      transition: transform 0.2s;
+      margin-right: 10px;
+      color: #7239ea;
+    }
+
+    .group-header .arrow.rotated {
+      transform: rotate(90deg);
+    }
+
+    .target-name {
+      font-size: 1.75rem; /* User requirement 1 */
+      font-weight: 600;
+      color: #1e1e2f;
+    }
+
+    .group-cases {
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Inject path items with 3px margins/paddings */
+    .inject-path-item {
+      margin: 3px 0 3px 3px; /* User requirement 2: Top/Bottom 3px, Left 3px */
+      padding: 3px;          /* Tight padding */
+      border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .inject-path-item:last-child {
+      border-bottom: none;
+    }
+
+    .path-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: rgba(30, 30, 47, 0.55);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    /* Buttons groups and actions list */
+    .case-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .case-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: all 0.2s;
+    }
+
+    .case-item:hover {
+      background: rgba(114, 57, 234, 0.12);
+      transform: translateX(4px);
+      border-color: rgba(114, 57, 234, 0.3);
+    }
+
+    .case-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .case-icon {
+      font-size: 1.75rem; /* User requirement 1 */
+    }
+
+    .case-name {
+      font-size: 1.75rem; /* User requirement 1 */
+      color: #1e1e2f;
+      font-weight: 500;
+    }
+
+    /* Left resize handle (since drawer is on the right) */
+    .resize-handle-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 100%;
+      cursor: ew-resize;
+      background: transparent;
+      transition: background 0.3s;
+      z-index: 10;
+    }
+
+    .resize-handle-left:hover {
+      background: rgba(114, 57, 234, 0.3);
+    }
+
+    .watermark-hint {
+      text-align: center;
+      font-size: 1.2rem;
+      color: rgba(30, 30, 47, 0.3);
+      margin-top: 24px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Panel sticking to the right side -->
+  <div class="mock-panel-sidebar" id="sidebarPanel">
+    
+    <!-- Resize handle on the left edge -->
+    <div class="resize-handle-left" id="resizeHandle"></div>
+
+    <!-- Header -->
+    <div class="mock-panel-header">
+      <span class="header-icon">🧪</span>
+      <div class="header-title-container">
+        <span class="header-title">_IPQC_Form</span>
+        <span class="header-subtitle">MSW PANEL V3.5 / _IPQC_FORM</span>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn" title="診斷 Vue 結構">🩺</button>
+      </div>
+    </div>
+
+    <!-- Switch & Menu -->
+    <div class="mock-panel-menu">
+      <div class="menu-top-row">
+        <div class="main-switch">
+          <span class="switch-label">攔截: ON</span>
+          <label class="switch-container">
+            <input type="checkbox" checked id="interceptToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="radio-group">
+          <label class="radio-label" id="radioMsw">MSW</label>
+          <label class="radio-label active" id="radioInject">Inject</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body contents -->
+    <div class="mock-panel-body">
+      
+      <!-- Search -->
+      <div class="search-container">
+        <input type="text" placeholder="搜尋 Group、路徑或情境..." class="search-input">
+      </div>
+
+      <!-- Group 1: Basic -->
+      <div class="inject-target-group">
+        <div class="group-header" onclick="toggleGroup('groupBasic')">
+          <span class="arrow rotated" id="groupBasicArrow">▶</span>
+          <span class="target-name">Basic</span>
+        </div>
+        
+        <div class="group-cases" id="groupBasic">
+          
+          <!-- Path Item 1 -->
+          <div class="inject-path-item">
+            <div class="path-title">Setting.CheckOutSet.OperInspInfo</div>
+            <div class="case-item-list">
+              
+              <!-- Case Button 1 (Object Callback) -->
+              <div class="case-item">
+                <div class="case-item-left">
+                  <span class="case-icon">⚡</span>
+                  <span class="case-name">_切換_系統判定</span>
+                </div>
+              </div>
+
+              <!-- Case Button 2 (Object Callback) -->
+              <div class="case-item">
+                <div class="case-item-left">
+                  <span class="case-icon">⚡</span>
+                  <span class="case-name">_配合檢驗判定</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Group 2: Case1 -->
+      <div class="inject-target-group">
+        <div class="group-header" onclick="toggleGroup('groupCase1')">
+          <span class="arrow rotated" id="groupCase1Arrow">▶</span>
+          <span class="target-name">Case1</span>
+        </div>
+        
+        <div class="group-cases" id="groupCase1">
+          
+          <!-- Path Item 2 -->
+          <div class="inject-path-item">
+            <div class="path-title">Setting.CheckOutSet.OperInspInfo.Insp_Match</div>
+            <div class="case-item-list">
+              <div class="case-item">
+                <div class="case-item-left">
+                  <span class="case-icon">📥</span>
+                  <span class="case-name">啟用 (True)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="watermark-hint">
+        右側抽屜亮色毛玻璃 (1.75rem 緊湊版面)
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Group collapsible functionality
+    function toggleGroup(id) {
+      const group = document.getElementById(id);
+      const arrow = document.getElementById(id + 'Arrow');
+      if (group.style.display === 'none') {
+        group.style.display = 'flex';
+        arrow.classList.add('rotated');
+      } else {
+        group.style.display = 'none';
+        arrow.classList.remove('rotated');
+      }
+    }
+
+    // Intercept switch label text change demo
+    const toggle = document.getElementById('interceptToggle');
+    const label = document.querySelector('.switch-label');
+    toggle.addEventListener('change', () => {
+      label.innerText = toggle.checked ? '攔截: ON' : '攔截: OFF';
+    });
+
+    // Custom Drag-to-Resize on the left border for Right Sidebar Drawer
+    const sidebar = document.getElementById('sidebarPanel');
+    const resizeHandle = document.getElementById('resizeHandle');
+    
+    let isResizing = false;
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      document.body.style.cursor = 'ew-resize';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      
+      // Since sidebar sticks to the right, the width is the window width minus the mouse X coordinate
+      let newWidth = window.innerWidth - e.clientX;
+      
+      // Impose boundaries
+      newWidth = Math.max(400, Math.min(newWidth, window.innerWidth * 0.8));
+      
+      sidebar.style.width = newWidth + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = 'default';
+      }
+    });
+
+    // Toggle Tab style demo
+    const radioMsw = document.getElementById('radioMsw');
+    const radioInject = document.getElementById('radioInject');
+    
+    radioMsw.addEventListener('click', () => {
+      radioMsw.classList.add('active');
+      radioInject.classList.remove('active');
+    });
+
+    radioInject.addEventListener('click', () => {
+      radioInject.classList.add('active');
+      radioMsw.classList.remove('active');
+    });
+  </script>
+</body>
+</html>

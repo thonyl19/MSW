@@ -1,0 +1,1023 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MSW Panel 優化樣板 - 暗色浮動毛玻璃 (Dark Glassmorphic Floating Panel)</title>
+  <style>
+    /* Reset & CSS variables */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      width: 100vw;
+      height: 100vh;
+      background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920');
+      background-size: cover;
+      background-position: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.3s ease, background-image 0.3s ease;
+    }
+
+    /* Floating background switcher toolbar */
+    .bg-switcher-bar {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(15, 15, 25, 0.6);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 8px 14px;
+      z-index: 9999999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .bg-switcher-label {
+      color: #d1d5db; /* High contrast */
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .bg-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .bg-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .bg-btn.active {
+      background: #7239ea;
+      border-color: rgba(114, 57, 234, 0.5);
+      box-shadow: 0 0 10px rgba(114, 57, 234, 0.4);
+    }
+
+    /* Resizable and draggable floating container */
+    .mock-panel-container {
+      position: absolute;
+      width: 480px;
+      height: 600px;
+      min-width: 380px;
+      min-height: 400px;
+      max-width: 95vw;
+      max-height: 95vh;
+      
+      /* Glassmorphism configuration */
+      background: rgba(15, 15, 25, 0.55);
+      backdrop-filter: blur(30px) saturate(200%);
+      -webkit-backdrop-filter: blur(30px) saturate(200%);
+      
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 24px;
+      color: #ffffff;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 
+                  inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+      
+      display: flex;
+      flex-direction: column;
+      
+      /* Enable resizing */
+      resize: both;
+      overflow: hidden;
+      
+      transition: border-color 0.3s ease;
+    }
+
+    .mock-panel-container:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Header Styling */
+    .mock-panel-header {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: move;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .header-icon {
+      font-size: 1.5rem;
+      margin-right: 12px;
+      filter: drop-shadow(0 0 8px rgba(114, 57, 234, 0.8));
+    }
+
+    .header-title-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .header-subtitle {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #d1d5db; /* High contrast white-gray */
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: white;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Custom color and animation for diagnosis icon in header */
+    .diagnose-action-btn {
+      color: #b794f4;
+      background: rgba(183, 148, 244, 0.15);
+      border: 1px solid rgba(183, 148, 244, 0.3);
+    }
+    
+    .diagnose-action-btn:hover {
+      background: rgba(183, 148, 244, 0.3);
+      transform: scale(1.1) rotate(-10deg);
+    }
+
+    /* Switcher & Tabs area */
+    .mock-panel-menu {
+      padding: 8px 18px 12px 18px;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .menu-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .main-switch {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(114, 57, 234, 0.2);
+    }
+
+    .switch-label {
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      font-weight: 600;
+      margin-right: 12px;
+      color: #ffffff;
+    }
+
+    .switch-container {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
+    }
+
+    .switch-container input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    input:checked + .slider {
+      background-color: #7239ea;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    .radio-group {
+      display: flex;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .radio-label {
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #a0aec0; /* User requirement: High contrast gray-white */
+      font-weight: 500;
+    }
+
+    .radio-label.active {
+      background: rgba(114, 57, 234, 0.8);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(114, 57, 234, 0.3);
+    }
+
+    /* Search Input styling (now sits inside Inject pane top area) */
+    .search-container {
+      position: relative;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 6px 30px 6px 12px;
+      border-radius: 12px;
+      color: #ffffff;
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: rgba(114, 57, 234, 0.5);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2rem;
+      color: #a0aec0;
+      cursor: pointer;
+    }
+
+    /* Body/Content Sizing */
+    .mock-panel-body {
+      overflow: hidden; /* Changed to hidden to allow separate scrolling pane containers */
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tab-pane {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow: hidden;
+      height: 100%;
+      padding: 12px 18px;
+    }
+
+    .tab-pane.active {
+      display: flex;
+    }
+
+    #mswPane {
+      overflow-y: auto; /* MSW tab scrolls internally */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+
+    /* Scrollable options list specifically for Inject tab */
+    .inject-list-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 8px 0; /* Tight margins */
+    }
+
+    .divider span {
+      font-size: 1.1rem;
+      color: #d1d5db; /* User requirement: High contrast gray-white */
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      white-space: nowrap;
+      margin-right: 12px;
+    }
+
+    .divider:after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Form items with tight padding and 1.35rem font size */
+    .mock-item {
+      margin: 3px 0 3px 3px; /* User requirement 2: Top/Bottom 3px, Left 3px */
+      padding: 3px;          /* Tight padding */
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .mock-item label {
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      color: #ffffff;
+      font-weight: 400;
+    }
+
+    .value-badge {
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      color: #b794f4;
+      font-weight: bold;
+      margin-left: auto;
+    }
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Compact inputs styling with 1.35rem font */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      outline: none;
+      margin: 8px 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #7239ea;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px rgba(114, 57, 234, 0.5);
+    }
+
+    select {
+      width: 100%;
+      appearance: none;
+      background: rgba(0, 0, 0, 0.4);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      outline: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 20px;
+      transition: all 0.2s;
+    }
+
+    select:focus {
+      border-color: rgba(114, 57, 234, 0.6);
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    /* Actions block */
+    .action-button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .mock-btn {
+      background: rgba(114, 57, 234, 0.15);
+      border: 1px solid rgba(114, 57, 234, 0.4);
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      font-weight: 500;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .mock-btn:hover {
+      background: rgba(114, 57, 234, 0.35);
+      border-color: rgba(114, 57, 234, 0.6);
+      transform: scale(1.02);
+    }
+
+    .mock-btn:active {
+      transform: scale(0.98);
+    }
+
+    .inject-target-group {
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .group-header {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.02);
+      transition: background 0.2s;
+    }
+
+    .group-header:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .group-header .arrow {
+      font-size: 0.9rem;
+      transition: transform 0.2s;
+      margin-right: 10px;
+      color: #b794f4;
+    }
+
+    .group-header .arrow.rotated {
+      transform: rotate(90deg);
+    }
+
+    .target-name {
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .group-cases {
+      padding: 6px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .inject-path-item {
+      margin: 3px 0 3px 3px; /* User requirement: 3px margins */
+      padding: 3px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .inject-path-item:last-child {
+      border-bottom: none;
+    }
+
+    .path-title {
+      font-size: 1.0rem;
+      font-weight: 600;
+      color: #a0aec0; /* User requirement: High contrast gray-white */
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      word-break: break-all;
+    }
+
+    .case-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .case-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.2s;
+    }
+
+    .case-item:hover {
+      background: rgba(114, 57, 234, 0.15);
+      border-color: rgba(114, 57, 234, 0.4);
+      transform: translateX(4px);
+    }
+
+    .case-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .case-icon {
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+    }
+
+    .case-name {
+      font-size: 1.35rem; /* User requirement: 1.35rem */
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    /* Watermark/Subtitle details */
+    .watermark-hint {
+      text-align: center;
+      font-size: 1.0rem;
+      color: #a0aec0; /* User requirement: High contrast gray-white */
+      margin-top: 20px;
+      font-style: italic;
+    }
+
+    /* Resizer indicator styling */
+    .resize-handle {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 16px;
+      height: 16px;
+      cursor: se-resize;
+      background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.35) 50%);
+      border-bottom-right-radius: 24px;
+      pointer-events: none;
+    }
+
+    /* Toast Notification styles */
+    .toast-container {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(114, 57, 234, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 12px;
+      padding: 10px 20px;
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 99999999;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast-container.active {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Background Switcher Toolbar -->
+  <div class="bg-switcher-bar">
+    <span class="bg-switcher-label">背景測試:</span>
+    <button class="bg-btn active" onclick="changeBg('default', this)">預設桌布</button>
+    <button class="bg-btn" onclick="changeBg('white', this)">極致純白</button>
+    <button class="bg-btn" onclick="changeBg('dark', this)">深灰/暗色</button>
+    <button class="bg-btn" onclick="changeBg('grid', this)">模擬網格</button>
+  </div>
+
+  <!-- Floating Resizable Panel -->
+  <div class="mock-panel-container" id="draggablePanel">
+    
+    <!-- Header -->
+    <div class="mock-panel-header" id="panelHeader">
+      <span class="header-icon">🧪</span>
+      <div class="header-title-container">
+        <span class="header-title">_InspOper</span>
+        <span class="header-subtitle">MSW PANEL V3.5 / _INSPOPER</span>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn" title="儲存快照">💾</button>
+        <button class="action-btn" title="清除快照">🧹</button>
+        <button class="action-btn" title="熱重載">🔄</button>
+        <!-- Moved Stethoscope Button 🩺 to top header list -->
+        <button class="action-btn diagnose-action-btn" id="diagnoseBtn" title="檢測頁面 Vue 結構" style="display: none;" onclick="simulateInject('Diagnostics', 'Vue結構診斷中...')">🩺</button>
+      </div>
+    </div>
+
+    <!-- Switch & Menu area -->
+    <div class="mock-panel-menu">
+      <div class="menu-top-row">
+        <div class="main-switch">
+          <span class="switch-label" id="interceptLabel">攔截: ON</span>
+          <label class="switch-container">
+            <input type="checkbox" id="interceptToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="radio-group">
+          <label class="radio-label active" id="radioMsw">MSW</label>
+          <label class="radio-label" id="radioInject">Inject</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrollable Body contents -->
+    <div class="mock-panel-body">
+      
+      <!-- 1. MSW Tab Pane -->
+      <div class="tab-pane active" id="mswPane">
+        <div class="divider"><span>基礎控制項 (Basic)</span></div>
+
+        <!-- API delay -->
+        <div class="mock-item">
+          <div class="label-row">
+            <label for="apiDelayRange">API 延遲 (ms)</label>
+            <span class="value-badge" id="delayValue">0ms</span>
+          </div>
+          <input type="range" id="apiDelayRange" min="0" max="5000" step="100" value="0">
+        </div>
+
+        <!-- API status code -->
+        <div class="mock-item">
+          <label for="apiStatusSelect">API 狀態碼模擬</label>
+          <select id="apiStatusSelect">
+            <option value="200">200 OK</option>
+            <option value="401">401 Unauthorized</option>
+            <option value="403">403 Forbidden</option>
+            <option value="500">500 Server Error</option>
+          </select>
+        </div>
+
+        <div class="divider"><span>動態業務控制 (Dynamic)</span></div>
+
+        <!-- Action items -->
+        <div class="mock-item">
+          <label>快照與控制操作</label>
+          <div class="action-button-group">
+            <button class="mock-btn" onclick="simulateInject('MSW','載入快照')">載入快照</button>
+            <button class="mock-btn" onclick="simulateInject('MSW','重設資料')">重設資料</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Inject Tab Pane -->
+      <div class="tab-pane" id="injectPane">
+        
+        <!-- Fixed Search Input INSIDE the Inject Pane top section -->
+        <div class="search-container" id="searchContainer">
+          <input type="text" placeholder="搜尋 Group、路徑或情境..." class="search-input" id="injectSearch">
+          <span class="clear-search" id="clearSearchBtn" style="display: none;">×</span>
+        </div>
+
+        <!-- Scrollable options list ONLY -->
+        <div class="inject-list-scroll" id="injectListScroll">
+          
+          <!-- Collapsible Group: Basic -->
+          <div class="inject-target-group">
+            <div class="group-header" onclick="toggleGroup('groupBasic')">
+              <span class="arrow rotated" id="groupBasicArrow">▶</span>
+              <span class="target-name">Basic</span>
+            </div>
+            
+            <div class="group-cases" id="groupBasic">
+              <div class="inject-path-item">
+                <div class="path-title">Setting.CheckOutSet.OperInspInfo</div>
+                <div class="case-item-list">
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo', '檢項1資訊注入')">
+                    <div class="case-item-left">
+                      <span class="case-icon">⚡</span>
+                      <span class="case-name">_切換_系統判定</span>
+                    </div>
+                  </div>
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo', '檢項配合判定注入')">
+                    <div class="case-item-left">
+                      <span class="case-icon">⚡</span>
+                      <span class="case-name">_配合檢驗判定</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Collapsible Group: Case1 -->
+          <div class="inject-target-group">
+            <div class="group-header" onclick="toggleGroup('groupCase1')">
+              <span class="arrow rotated" id="groupCase1Arrow">▶</span>
+              <span class="target-name">Case1</span>
+            </div>
+            
+            <div class="group-cases" id="groupCase1">
+              <div class="inject-path-item">
+                <div class="path-title">Setting.CheckOutSet.OperInspInfo.Insp_Match</div>
+                <div class="case-item-list">
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo.Insp_Match', 'true')">
+                    <div class="case-item-left">
+                      <span class="case-icon">📥</span>
+                      <span class="case-name">_配合檢驗判定啟用 (True)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="inject-path-item">
+                <div class="path-title">Setting.CheckOutSet.OperInspInfo.NCR_Hold</div>
+                <div class="case-item-list">
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo.NCR_Hold', 'true')">
+                    <div class="case-item-left">
+                      <span class="case-icon">📥</span>
+                      <span class="case-name">強制扣留啟用 (True)</span>
+                    </div>
+                  </div>
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo.NCR_Hold', 'false')">
+                    <div class="case-item-left">
+                      <span class="case-icon">📥</span>
+                      <span class="case-name">強制扣留停用 (False)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Collapsible Group: Case2 -->
+          <div class="inject-target-group">
+            <div class="group-header" onclick="toggleGroup('groupCase2')">
+              <span class="arrow rotated" id="groupCase2Arrow">▶</span>
+              <span class="target-name">情境</span>
+            </div>
+            
+            <div class="group-cases" id="groupCase2">
+              <div class="inject-path-item">
+                <div class="path-title">Setting.CheckOutSet.OperInspInfo.OperInspSet.Ext.SYSTEM_JUDGMENT</div>
+                <div class="case-item-list">
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo.OperInspSet.Ext.SYSTEM_JUDGMENT', 'T')">
+                    <div class="case-item-left">
+                      <span class="case-icon">⚡</span>
+                      <span class="case-name">系統判定合格 ("T")</span>
+                    </div>
+                  </div>
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo.OperInspSet.Ext.SYSTEM_JUDGMENT', 'F')">
+                    <div class="case-item-left">
+                      <span class="case-icon">⚡</span>
+                      <span class="case-name">系統判定不合格 ("F")</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="inject-path-item">
+                <div class="path-title">Setting.CheckOutSet.OperInspInfo.ActionCallBack</div>
+                <div class="case-item-list">
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo.ActionCallBack', '執行全退處理')">
+                    <div class="case-item-left">
+                      <span class="case-icon">⚡</span>
+                      <span class="case-name">全退-強制扣留(開)</span>
+                    </div>
+                  </div>
+                  <div class="case-item" onclick="simulateInject('Setting.CheckOutSet.OperInspInfo.ActionCallBack', '關閉全退處理')">
+                    <div class="case-item-left">
+                      <span class="case-icon">⚡</span>
+                      <span class="case-name">全退-強制扣留(關)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- End scroll container -->
+
+      </div>
+
+      <div class="watermark-hint">
+        背景毛玻璃與緊湊間距預覽 (1.35rem 文字)
+      </div>
+    </div>
+
+    <!-- Drag Resizing visual cue -->
+    <div class="resize-handle"></div>
+  </div>
+
+  <!-- Toast Notification element -->
+  <div class="toast-container" id="toastBox">
+    <span>💡</span>
+    <span id="toastMsg">成功注入數據</span>
+  </div>
+
+  <script>
+    // Toast Notification simulator
+    function showToast(message) {
+      const toast = document.getElementById('toastBox');
+      const msgSpan = document.getElementById('toastMsg');
+      msgSpan.innerText = message;
+      toast.classList.add('active');
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 2500);
+    }
+
+    function simulateInject(path, name) {
+      showToast(`成功執行對象 [${path}] -> ${name}`);
+    }
+
+    // Collapsible Group functionality
+    function toggleGroup(id) {
+      const group = document.getElementById(id);
+      const arrow = document.getElementById(id + 'Arrow');
+      if (group.style.display === 'none') {
+        group.style.display = 'flex';
+        arrow.classList.add('rotated');
+      } else {
+        group.style.display = 'none';
+        arrow.classList.remove('rotated');
+      }
+    }
+
+    // Tab Switching logic
+    const radioMsw = document.getElementById('radioMsw');
+    const radioInject = document.getElementById('radioInject');
+    const mswPane = document.getElementById('mswPane');
+    const injectPane = document.getElementById('injectPane');
+    const diagnoseBtn = document.getElementById('diagnoseBtn');
+
+    // Click tabs (radio button style)
+    radioMsw.addEventListener('click', () => {
+      radioMsw.classList.add('active');
+      radioInject.classList.remove('active');
+      
+      mswPane.classList.add('active');
+      injectPane.classList.remove('active');
+      
+      diagnoseBtn.style.display = 'none';
+    });
+
+    radioInject.addEventListener('click', () => {
+      radioInject.classList.add('active');
+      radioMsw.classList.remove('active');
+      
+      injectPane.classList.add('active');
+      mswPane.classList.remove('active');
+      
+      diagnoseBtn.style.display = 'inline-flex';
+    });
+
+    // Background Switcher Handler
+    function changeBg(type, btnEl) {
+      const buttons = document.querySelectorAll('.bg-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      btnEl.classList.add('active');
+
+      if (type === 'default') {
+        document.body.style.backgroundImage = "url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920')";
+        document.body.style.backgroundColor = "";
+        document.body.style.backgroundSize = "cover";
+      } else if (type === 'white') {
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = "#ffffff";
+      } else if (type === 'dark') {
+        document.body.style.backgroundImage = "none";
+        document.body.style.backgroundColor = "#1e1e2f";
+      } else if (type === 'grid') {
+        document.body.style.backgroundImage = `
+          linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px)
+        `;
+        document.body.style.backgroundColor = "#f0f2f5";
+        document.body.style.backgroundSize = "24px 24px";
+      }
+    }
+
+    // Header drag-and-drop movement
+    const panel = document.getElementById('draggablePanel');
+    const header = document.getElementById('panelHeader');
+    
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.action-btn')) return;
+      isDragging = true;
+      offsetX = e.clientX - panel.offsetLeft;
+      offsetY = e.clientY - panel.offsetTop;
+      header.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      
+      let left = e.clientX - offsetX;
+      let top = e.clientY - offsetY;
+      
+      left = Math.max(10, Math.min(left, window.innerWidth - panel.offsetWidth - 10));
+      top = Math.max(10, Math.min(top, window.innerHeight - panel.offsetHeight - 10));
+      
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+      panel.style.transform = 'none'; 
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      header.style.cursor = 'move';
+    });
+
+    // Intercept switch label text change demo
+    const toggle = document.getElementById('interceptToggle');
+    const label = document.getElementById('interceptLabel');
+    toggle.addEventListener('change', () => {
+      label.innerText = toggle.checked ? '攔截: ON' : '攔截: OFF';
+    });
+
+    // Interactive slider text change demo
+    const slider = document.getElementById('apiDelayRange');
+    const valueBadge = document.getElementById('delayValue');
+    slider.addEventListener('input', () => {
+      valueBadge.innerText = slider.value + 'ms';
+    });
+
+    // Search Box clear button visibility
+    const searchInput = document.getElementById('injectSearch');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    searchInput.addEventListener('input', () => {
+      clearBtn.style.display = searchInput.value ? 'block' : 'none';
+    });
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearBtn.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
