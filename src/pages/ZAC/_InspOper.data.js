@@ -9,6 +9,62 @@ export var _form = {
 	form1:{"Test":"A", "Insp_Match": false, "NCR_Hold": false, "Prod_Grading": false, "EdcList": null, "WP_IPQC_LOT": null, "title": null, "enable": false, "required": false, "CodeRule": null }
 };
 
+var $data={
+        _切換_系統判定($d,val){
+            var _obj = $d.OperInspInfo.OperInspSet.Ext;
+            if( val == null ) val = !(_obj.SYSTEM_JUDGMENT == "T");
+            _obj.SYSTEM_JUDGMENT = val?"T":"F";
+            return this;
+        },
+        _配合檢驗判定($d,val){
+            var _obj = $d.Setting.CheckOutSet.OperInspInfo;
+            val = val ?? !_obj.Insp_Match;
+            _obj.Insp_Match = val;
+            return this;
+        },
+        _等級判定($d,val){
+            var _obj = $d.Setting.CheckOutSet.OperInspInfo;
+            val = val ?? !_obj.Prod_Grading;
+            _obj.Prod_Grading = val;
+            return this;
+        },
+        _不合格強制扣留($d,val){
+            var _obj = $d.Setting.CheckOutSet.OperInspInfo;
+            val = val ?? !_obj.NCR_Hold;
+            _obj.NCR_Hold = val;
+            return this;
+        },
+        _判定結果($d,val){
+            var _obj = $d.OperInspInfo.WP_IPQC;
+            if( val == null ) val = !(_obj.QC_RESULT == "Accept");
+            _obj.QC_RESULT = val ? "Accept" :"Reject" ;
+            return this;
+        },
+        "全退-強制扣留(開"($d){
+            this._切換_系統判定($d,false)
+                ._不合格強制扣留($d,true)
+                ._判定結果($d,false);
+        },
+        "全退-強制扣留(關"($d){
+            this._切換_系統判定($d,false)
+                ._不合格強制扣留($d,false)
+                ._判定結果($d,false);
+        }
+    }
+var $vm = {
+        _oper_form($d){
+            return $d.$refs.oper_form;
+        },
+        _edcScope($d){
+            return $d.$refs.edcScope;
+        },
+
+        "測試全退連動主表單"($d){
+            var _edcScope = this._edcScope($d);
+            _edcScope.__一般檢查合格判定規則(false);
+        }
+    }
+
 export var _config = {
   title: '_IPQC_Form',
   controls: [
@@ -41,54 +97,6 @@ export var _config = {
           $d.Test = 'SingleCallback';
       }
     },
-    "情境":{
-        "$data":{
-            _切換_系統判定($d,val){
-                var _obj = $d.OperInspInfo.OperInspSet.Ext;
-                if( val == null ) val = !(_obj.SYSTEM_JUDGMENT == "T");
-                _obj.SYSTEM_JUDGMENT = val?"T":"F";
-                return this;
-            },
-            _配合檢驗判定($d,val){
-                var _obj = $d.Setting.CheckOutSet.OperInspInfo;
-                val = val ?? !_obj.Insp_Match;
-                _obj.Insp_Match = val;
-                return this;
-            },
-            _等級判定($d,val){
-                var _obj = $d.Setting.CheckOutSet.OperInspInfo;
-                val = val ?? !_obj.Prod_Grading;
-                _obj.Prod_Grading = val;
-                return this;
-            },
-            _不合格強制扣留($d,val){
-                var _obj = $d.Setting.CheckOutSet.OperInspInfo;
-                val = val ?? !_obj.NCR_Hold;
-                _obj.NCR_Hold = val;
-                return this;
-            },
-            _判定結果($d,val){
-                var _obj = $d.OperInspInfo.WP_IPQC;
-                if( val == null ) val = !(_obj.QC_RESULT == "Accept");
-                _obj.QC_RESULT = val ? "Accept" :"Reject" ;
-                return this;
-            },
-            "全退-強制扣留(開"($d){
-                this._切換_系統判定($d,false)
-                    ._不合格強制扣留($d,true)
-                    ._判定結果($d,false);
-            },
-            "全退-強制扣留(關"($d){
-                this._切換_系統判定($d,false)
-                    ._不合格強制扣留($d,false)
-                    ._判定結果($d,false);
-            }
-        },
-        "$vm":{
-            _Test($d){
-                debugger
-            }
-        }
-    }
+    "情境":{$data,$vm}
   }
 };
