@@ -1,0 +1,125 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>MSW Mock Panel (獨立子視窗)</title>
+    <link rel="stylesheet" href="./components/MockPanel.css">
+    <style>
+        html {
+            font-size: 62.5% !important; /* 強制 1rem = 10px 以對齊主網頁排版縮放，防止大跑版 */
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0f172a; /* Dark slate */
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 1.4rem; /* 重新定義 body 預設字體大小 */
+        }
+        /* 滿版覆蓋 */
+        .mock-panel-wrapper {
+            position: static !important;
+            width: 100% !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
+        .mock-panel-container {
+            width: 100% !important;
+            height: 100vh !important;
+            position: static !important;
+            transform: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="msw-panel-root"></div>
+
+    <!-- 載入全域 Lodash 以供 MockPanel.js 與其相關邏輯使用 -->
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+
+    <!-- 動態定義 Import Map，對接 Vue ESM 與內部模組 -->
+    <script type="importmap">
+        {
+            "imports": {
+                "vue": "https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.esm.browser.js",
+                "msw-store": "./store.js",
+                "msw-channel": "./msw-channel.js",
+                "msw-panel": "./components/MockPanel.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import Vue from 'vue';
+        import MockPanel from 'msw-panel';
+        import { mockConfig } from 'msw-store';
+        import { MSWChannel, deserializeConfig } from 'msw-channel';
+
+        // 建立防無窮迴圈的鎖
+        let isInternalUpdate = false;
+
+        // 1. 初始化與 Master 的 BroadcastChannel
+        const channel = new MSWChannel('slave', (type, payload) => {
+            if (type === 'STATE_INIT' || type === 'STATE_SYNC') {
+                isInternalUpdate = true;
+                deserializeConfig(payload.state, mockConfig);
+                Vue.nextTick(() => {
+                    isInternalUpdate = false;
+                });
+            }
+        });
+
+        // 2. 向 Master 請求初始狀態
+        channel.post('PANEL_READY');
+
+        // 3. 監聽子視窗本機 mockConfig 的異動並同步給 Master
+        new Vue().$watch(() => {
+            const state = {
+                isEnabled: mockConfig.isEnabled,
+                apiDelay: mockConfig.apiDelay,
+                apiStatus: mockConfig.apiStatus,
+                activeSource: mockConfig.activeSource,
+                values: {}
+            };
+            
+            // 蒐集動態控制項的值
+            if (mockConfig.controls) {
+                mockConfig.controls.forEach(c => {
+                    if (mockConfig[c.key] !== undefined) {
+                        state.values[c.key] = mockConfig[c.key];
+                    }
+                });
+            }
+            return state;
+        }, (newState) => {
+            if (isInternalUpdate) return;
+            channel.post('STATE_CHANGED', { state: newState });
+        }, { deep: true });
+
+        // 4. 掛載 Vue Panel 元件
+        new Vue({
+            render: h => h(MockPanel, {
+                props: {
+                    isDetached: true // 傳入 props 告訴 MockPanel 其處於子視窗模式
+                }
+            }),
+            provide() {
+                return {
+                    mswChannel: channel
+                };
+            }
+        }).$mount('#msw-panel-root');
+
+        // 5. 視窗關閉時發送通知，以便主視窗還原內嵌面板
+        window.addEventListener('beforeunload', () => {
+            channel.post('PANEL_CLOSED');
+            channel.destroy();
+        });
+    </script>
+</body>
+</html>

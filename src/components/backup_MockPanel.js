@@ -489,7 +489,7 @@ export default {
 
         // ── 路徑 A：直接 DOM 搜尋注入 ──────────────────────────────
         try {
-            const searchRoots = ['#app', '#VueApp', '.app-container', 'body > div'];
+            const searchRoots = ['#app', '#VueApp','#WipForm', '.app-container', 'body > div'];
             let targetInstance = null;
             const rootKey = target.split('.')[0];
 

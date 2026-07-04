@@ -5,12 +5,103 @@ export var _tmpData = {
 };
 
 export var _form = {
- form1:{"LOT":"JOSEPH_TEST_LAYER-02","WO":"JOSEPH_TEST_LAYER","OPER_SID":"GTI25092609482676057","ROUTE_VER_OPER_SID":"GTI25092610430277229","SUB_ROUTE_VER_OPER_SID":null,"UNIT":"PCS","QUANTITY":"20.000","EQP_SID":null,"COMMENT":null,"IsMustSelectedEqp":false,"Has_sub_record_oper":false}
+ form1:{
+    "formData": {
+        "ENABLE_FLAG": "F",
+        "INSP_TYPE": "IPQC",
+        "ENCODE_FORMAT": "InspNoByLot",
+        "INSP_NO": "A000",
+        "INSP_NAME": "A000",
+        "INSP_KEY": "LOT"
+    },
+    "edcData": [
+        {
+            "EDC_VER_PARA_SID": "GTI26062414023409079",
+            "EDC_VER_SID": "GTI26062412010909041",
+            "EDC_SID": "GTI24122608210195120",
+            "EDC_NO": "B015-067NA2-001-0010_1110_StartCheck",
+            "EDC_NAME": "B015-067NA2-001-0010_1110_首件檢查",
+            "VERSION": 4,
+            "EDC_PARA_SID": "GTI24122419452190225",
+            "PARA_NO": "EDC_00001",
+            "PARAMETER": "鎖附扭力",
+            "DATATYPE": "N",
+            "TL": "96",
+            "UCL": 100,
+            "LCL": 90,
+            "USL": null,
+            "LSL": null,
+            "CREATE_USER": "Jordan",
+            "CREATE_DATE": "2026-06-24 14:02:34",
+            "UPDATE_USER": "Jordan",
+            "UPDATE_DATE": "2026-06-24 14:02:34",
+            "SAMPLESIZE": 1,
+            "THROW_SPC": "T",
+            "MUST_INPUT": "T",
+            "ITEM_SEQ": 10,
+            "DISPLAY_POINT_NAME": null,
+            "DB_TABLE": null,
+            "DB_COLUMN_NAME": null,
+            "TEST_POINT": 1,
+            "EDC_THROW_SPC": "T",
+            "SINGLE_SIDE": "F"
+        },
+        {
+            "EDC_VER_PARA_SID": "GTI26062414023409080",
+            "EDC_VER_SID": "GTI26062412010909041",
+            "EDC_SID": "GTI24122608210195120",
+            "EDC_NO": "B015-067NA2-001-0010_1110_StartCheck",
+            "EDC_NAME": "B015-067NA2-001-0010_1110_首件檢查",
+            "VERSION": 4,
+            "EDC_PARA_SID": "GTI24122420041391540",
+            "PARA_NO": "CWH1_E00001",
+            "PARAMETER": "雷雕圖案不能偏移",
+            "DATATYPE": "B",
+            "TL": "F",
+            "UCL": null,
+            "LCL": null,
+            "USL": null,
+            "LSL": null,
+            "CREATE_USER": "Jordan",
+            "CREATE_DATE": "2026-06-24 14:02:34",
+            "UPDATE_USER": "Jordan",
+            "UPDATE_DATE": "2026-06-24 14:02:34",
+            "SAMPLESIZE": 1,
+            "THROW_SPC": "F",
+            "MUST_INPUT": "T",
+            "ITEM_SEQ": 20,
+            "DISPLAY_POINT_NAME": null,
+            "DB_TABLE": null,
+            "DB_COLUMN_NAME": null,
+            "TEST_POINT": 1,
+            "EDC_THROW_SPC": "F",
+            "SINGLE_SIDE": "F"
+        }
+    ],
+    "isTest": "T",
+    "__RequestVerificationToken": "CZIYHeVCp0BeePYOMwV8P0_l-LnuYa_lnR0u6UWX3-wtrIaaJBaVxkQm34S5cX9iRilSejeUxYCxnYqencFCrMENCt9k02Hi5JNXPZ3WQP41"
+    }
 
 }
 
+var $vm = {
+    _Save_Check(_vm){
+        _vm.Save_Check(_form.form1);
+    },
+    _usePartScope(_vm){
+        debugger
+        return _vm.$refs.usePartScope[0];
+    },
+    Bind重要物料(_vm){
+        this._usePartScope(_vm).c_UseMLot = {};
+        // let {formData, edcData} = _form.form1;
+        // _vm.formData = formData;
+        // _vm.edcData = edcData;
+    }
+}
+
 export var _config = {
-  title: '_IPQC_Form',
+  title: 'CUB_StationCheckIn',
   controls: [
     { 
       label: 'ListData (MSW 攔截)', 
@@ -33,6 +124,6 @@ export var _config = {
     }
   ],
   inject: {
-    
+    "情境":{$vm}
   }
 }

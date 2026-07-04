@@ -51,6 +51,16 @@ var $data={
                 ._判定結果($d,false);
         }
     }
+var $vm_Base = {
+    OperInspInfo(_vm){
+        //let {OperInspInfo}  = _vm;
+        window.msw_win(_vm, _vm.OperInspInfo, "檢驗資訊 (msw_win)");
+    },
+    CurrentLot(_vm){
+        let {CurrentLot}  = _vm;
+        console.log({CurrentLot});
+    },
+}
 var $vm = {
         _oper_form($d){
             return $d.$refs.oper_form;
@@ -62,7 +72,7 @@ var $vm = {
         "測試全退連動主表單"($d){
             var _edcScope = this._edcScope($d);
             _edcScope.__一般檢查合格判定規則(false);
-        }
+        },
     }
 
 export var _config = {
@@ -97,6 +107,7 @@ export var _config = {
           $d.Test = 'SingleCallback';
       }
     },
-    "情境":{$data,$vm}
+    "情境":{$data,$vm},
+    "關鍵資訊":{$vm:$vm_Base}
   }
 };

@@ -2,7 +2,7 @@
 import { mockConfig } from 'msw-store';
 import { registerMock } from 'msw-entry';
 import { handleCustomResponse, sendResponse } from 'msw-utils';
-import { _tmpData, _config  } from './_IPQC_Form.data.js';
+import { _tmpData, _config  } from './_IPQC_MaintainForm.data.js';
 
 // 2.6 數據定義模式 (Data Definition Mode)
 
