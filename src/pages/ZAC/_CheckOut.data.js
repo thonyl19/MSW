@@ -9,6 +9,238 @@ export var _form = {
 	form1:{"Test":"A", "Insp_Match": false, "NCR_Hold": false, "Prod_Grading": false, "EdcList": null, "WP_IPQC_LOT": null, "title": null, "enable": false, "required": false, "CodeRule": null }
 };
 
+var _物料批號 = {
+    GTI26052915260425035:{
+        "MTR_LOT_SID": "GTI26052915260425035",
+        "MTR_LOT": "GTI26052915260425035",
+        "MTR_LOT_1": null,
+        "MTR_LOT_2": null,
+        "MTR_BATCH_NO": null,
+        "MTR_BATCH_SEQ": null,
+        "STATUS": "Release",
+        "QUANTITY": 968570,
+        "UNIT": "M",
+        "QTY_1": 0,
+        "UNIT_1": null,
+        "QTY_2": 0,
+        "UNIT_2": null,
+        "OPER_SID": null,
+        "OPERATION_NO": null,
+        "OPERATION": null,
+        "WO_SID": null,
+        "WO": null,
+        "PRODUCT_SID": null,
+        "PRODUCT": "光學保護膜",
+        "PARTNO_SID": "GTI26042315332602972",
+        "PARTNO": "AG-200",
+        "PARTNO_VER_SID": "GTI26042315332602973",
+        "PARTNO_VERSION": 1,
+        "PRIORITY": "Normal",
+        "CLOSE_DATE": null,
+        "OWNER": null,
+        "EQP_SID": null,
+        "EQP_NO": null,
+        "ROOT_MTR_LOT_SID": "GTI26052915260425035",
+        "PARENT_MTR_LOT_SID": null,
+        "DATECODE": null,
+        "ATTRIBUTE_01": null,
+        "ATTRIBUTE_02": null,
+        "ATTRIBUTE_03": null,
+        "ATTRIBUTE_04": null,
+        "ATTRIBUTE_05": null,
+        "ATTRIBUTE_06": null,
+        "ATTRIBUTE_07": null,
+        "ATTRIBUTE_08": null,
+        "ATTRIBUTE_09": null,
+        "ATTRIBUTE_10": "首次耗用日：2026-06-25 14:02",
+        "ATTRIBUTE_11": null,
+        "ATTRIBUTE_12": null,
+        "ATTRIBUTE_13": null,
+        "ATTRIBUTE_14": null,
+        "ATTRIBUTE_15": null,
+        "ATTRIBUTE_16": null,
+        "CREATE_USER": "Jordan",
+        "CREATE_DATE": "2026-05-29T15:26:04",
+        "UPDATE_USER": "Jordan",
+        "UPDATE_DATE": "2026-05-29T15:26:04",
+        "VENDOR_SID": null,
+        "VENDOR_NO": null,
+        "STOCK": null,
+        "LOCATION": null,
+        "RECEIVE_NO": null,
+        "RECEIVE_SEQ": null,
+        "RECEIVE_DATE": null,
+        "SALEOUT_FLAG": null,
+        "SHIP": null,
+        "SHIP_SEQ": null,
+        "SHIP_DATE": null,
+        "CUSTOMER_SID": null,
+        "CUSTOMER_NO": null,
+        "CUSTOMER": null,
+        "IS_PRODUCT": null,
+        "PICKING_NO": null,
+        "PICKING_SEQ": null,
+        "WAREHOUSE_SID": null,
+        "WAREHOUSE_NO": null,
+        "WAREHOUSE_NAME": null,
+        "EXPIRATION_DATE": null,
+        "EXTEND_EXPIRATION_DATE": null,
+        "LOT_SID": null,
+        "LOT": null,
+        "ATTRIBUTE_17": null,
+        "ATTRIBUTE_18": null,
+        "ATTRIBUTE_19": null,
+        "ATTRIBUTE_20": null,
+        "ATTRIBUTE_21": null,
+        "ATTRIBUTE_22": null,
+        "ATTRIBUTE_23": null,
+        "ATTRIBUTE_24": null,
+        "ATTRIBUTE_25": null,
+        "ATTRIBUTE_26": null,
+        "ATTRIBUTE_27": null,
+        "ATTRIBUTE_28": null,
+        "ATTRIBUTE_29": null,
+        "ATTRIBUTE_30": null,
+        "ATTRIBUTE_31": null,
+        "ATTRIBUTE_32": null,
+        "ATTRIBUTE_33": null,
+        "ATTRIBUTE_34": null,
+        "ATTRIBUTE_35": null,
+        "ATTRIBUTE_36": null,
+        "ATTRIBUTE_37": null,
+        "ATTRIBUTE_38": null,
+        "ATTRIBUTE_39": null,
+        "ATTRIBUTE_40": null,
+        "WIDTH": null,
+        "finalAlertDate": null,
+        "finalInvoidDate": null,
+        "PART_NAME": "抗眩光膜",
+        "PARTNO_TYPE_NO": "Splicing",
+        "UseQty": 500,
+        "MatchRow": {
+            "PARTNO_PARTNO_SID": null,
+            "GROUP_ID": "105441a1-c070-42d1-8fd7-f3bb36467adc",
+            "OPER_PARTNO_SID": "GTI26042315332602972",
+            "PARTNO": "AG-200",
+            "PART_NAME": "抗眩光膜",
+            "SPEC": "主要物料",
+            "USE_RATE": 1,
+            "EXPECTED_USAGE": 6999,
+            "IS_SELECTED": false,
+            "SUB_FROM": null,
+            "CONFIG_FLAG": null,
+            "UsedNum": 500
+        }
+    },
+"MTR_9000023-202606300001-002":
+    {
+  "MTR_LOT_SID": "MTR_9000023-202606300001-002",
+  "MTR_LOT": "MTR_9000023-202606300001-002",
+  "MTR_LOT_1": null,
+  "MTR_LOT_2": null,
+  "MTR_BATCH_NO": null,
+  "MTR_BATCH_SEQ": null,
+  "STATUS": "Create",
+  "QUANTITY": 110,
+  "UNIT": "L",
+  "QTY_1": 0,
+  "UNIT_1": null,
+  "QTY_2": 0,
+  "UNIT_2": null,
+  "OPER_SID": null,
+  "OPERATION_NO": null,
+  "OPERATION": null,
+  "WO_SID": null,
+  "WO": null,
+  "PRODUCT_SID": null,
+  "PRODUCT": "系統預設產品資料",
+  "PARTNO_SID": "GTI26062315235376630",
+  "PARTNO": "MTR_9000023",
+  "PARTNO_VER_SID": "GTI26062315235376631",
+  "PARTNO_VERSION": 1,
+  "PRIORITY": "Normal",
+  "CLOSE_DATE": null,
+  "OWNER": null,
+  "EQP_SID": null,
+  "EQP_NO": null,
+  "ROOT_MTR_LOT_SID": "MTR_9000023-202606300001-002",
+  "PARENT_MTR_LOT_SID": null,
+  "DATECODE": null,
+  "ATTRIBUTE_01": null,
+  "ATTRIBUTE_02": null,
+  "ATTRIBUTE_03": null,
+  "ATTRIBUTE_04": null,
+  "ATTRIBUTE_05": null,
+  "ATTRIBUTE_06": null,
+  "ATTRIBUTE_07": null,
+  "ATTRIBUTE_08": null,
+  "ATTRIBUTE_09": null,
+  "ATTRIBUTE_10": "首次耗用日：2026-07-06 09:23",
+  "ATTRIBUTE_11": null,
+  "ATTRIBUTE_12": null,
+  "ATTRIBUTE_13": null,
+  "ATTRIBUTE_14": null,
+  "ATTRIBUTE_15": null,
+  "ATTRIBUTE_16": null,
+  "CREATE_USER": "Jordan",
+  "CREATE_DATE": "2026-06-30T09:15:33",
+  "UPDATE_USER": "Jordan",
+  "UPDATE_DATE": "2026-07-13T07:14:25",
+  "VENDOR_SID": null,
+  "VENDOR_NO": null,
+  "STOCK": null,
+  "LOCATION": null,
+  "RECEIVE_NO": null,
+  "RECEIVE_SEQ": null,
+  "RECEIVE_DATE": null,
+  "SALEOUT_FLAG": null,
+  "SHIP": null,
+  "SHIP_SEQ": null,
+  "SHIP_DATE": null,
+  "CUSTOMER_SID": null,
+  "CUSTOMER_NO": null,
+  "CUSTOMER": null,
+  "IS_PRODUCT": null,
+  "PICKING_NO": null,
+  "PICKING_SEQ": null,
+  "WAREHOUSE_SID": null,
+  "WAREHOUSE_NO": null,
+  "WAREHOUSE_NAME": null,
+  "EXPIRATION_DATE": null,
+  "EXTEND_EXPIRATION_DATE": null,
+  "LOT_SID": null,
+  "LOT": null,
+  "ATTRIBUTE_17": null,
+  "ATTRIBUTE_18": null,
+  "ATTRIBUTE_19": null,
+  "ATTRIBUTE_20": null,
+  "ATTRIBUTE_21": null,
+  "ATTRIBUTE_22": null,
+  "ATTRIBUTE_23": null,
+  "ATTRIBUTE_24": null,
+  "ATTRIBUTE_25": null,
+  "ATTRIBUTE_26": null,
+  "ATTRIBUTE_27": null,
+  "ATTRIBUTE_28": null,
+  "ATTRIBUTE_29": null,
+  "ATTRIBUTE_30": null,
+  "ATTRIBUTE_31": null,
+  "ATTRIBUTE_32": null,
+  "ATTRIBUTE_33": null,
+  "ATTRIBUTE_34": null,
+  "ATTRIBUTE_35": null,
+  "ATTRIBUTE_36": null,
+  "ATTRIBUTE_37": null,
+  "ATTRIBUTE_38": null,
+  "ATTRIBUTE_39": null,
+  "ATTRIBUTE_40": null,
+  "WIDTH": null,
+  "finalAlertDate": "2026-07-16T09:23:00",
+  "finalInvoidDate": "2026-07-26T09:23:00",
+  "PARTNO_TYPE_NO": "CoatingCate"
+}
+}
+
 var $data={
         _切換_系統判定($d,val){
             var _obj = $d.OperInspInfo.OperInspSet.Ext;
@@ -16,44 +248,16 @@ var $data={
             _obj.SYSTEM_JUDGMENT = val?"T":"F";
             return this;
         },
-        _配合檢驗判定($d,val){
-            var _obj = $d.Setting.CheckOutSet.OperInspInfo;
-            val = val ?? !_obj.Insp_Match;
-            _obj.Insp_Match = val;
-            return this;
-        },
-        _等級判定($d,val){
-            var _obj = $d.Setting.CheckOutSet.OperInspInfo;
-            val = val ?? !_obj.Prod_Grading;
-            _obj.Prod_Grading = val;
-            return this;
-        },
-        _不合格強制扣留($d,val){
-            var _obj = $d.Setting.CheckOutSet.OperInspInfo;
-            val = val ?? !_obj.NCR_Hold;
-            _obj.NCR_Hold = val;
-            return this;
-        },
-        _判定結果($d,val){
-            var _obj = $d.OperInspInfo.WP_IPQC;
-            if( val == null ) val = !(_obj.QC_RESULT == "Accept");
-            _obj.QC_RESULT = val ? "Accept" :"Reject" ;
-            return this;
-        },
-        "全退-強制扣留(開"($d){
-            this._切換_系統判定($d,false)
-                ._不合格強制扣留($d,true)
-                ._判定結果($d,false);
-        },
-        "全退-強制扣留(關"($d){
-            this._切換_系統判定($d,false)
-                ._不合格強制扣留($d,false)
-                ._判定結果($d,false);
-        }
+
+ 
     }
 var $vm_Base = {
     $data(_vm){
         window.msw_win(_vm, _vm.$data, "$data");
+    },
+    $refs(_vm){
+        var list = Object.keys(_vm.$refs);
+        window.msw_win(_vm, list, "$refs");
     },
     OperInspInfo(_vm){
         //let {OperInspInfo}  = _vm;
@@ -62,6 +266,30 @@ var $vm_Base = {
     CurrentLot(_vm){
         let {CurrentLot}  = _vm;
         console.log({CurrentLot});
+    },
+    _良品(_vm,val){
+        //取得 refs
+        var [_obj] = _vm.$refs['ZAC_GoodQty'];
+        //沒設值,當成取物件
+        if (val==null) return _obj;
+        //有設值,當 Cury 模式
+        if( _obj !=null) _obj.c_val = val;
+        return this;
+    },
+    _耗用物料訊息(_vm,val){
+        var [_obj] = _vm.$refs['OperMaterial'];
+        if (val==null) return _obj;
+        if( _obj !=null) _obj.c_UseMLot = val;
+        return this;
+    },
+
+    "良品產出+耗用物料訊息"(_vm){
+        var _obj = this._良品(_vm,500)
+            ._耗用物料訊息(_vm);
+          
+        _obj.c_UseMLot = _物料批號.GTI26052915260425035;
+        _obj.c_UseMLot = _物料批號["MTR_9000023-202606300001-002"];
+            
     },
 }
 var $vm = {
@@ -92,15 +320,7 @@ export var _config = {
     }
   ],
   inject: {
-    "Basic": {
-      "Setting.CheckOutSet.OperInspInfo": {
-        "檢驗項目資訊-1": _form.form1,
-        "複合情境回呼": ($d) => {
-            $d.Test = 'CallbackTriggered';
-            $d.Insp_Match = true;
-        }
-      }
-    },
+
     "Case1": {
       "Setting.CheckOutSet.OperInspInfo.Insp_Match": true,
       "Setting.CheckOutSet.OperInspInfo.Prod_Grading": true,

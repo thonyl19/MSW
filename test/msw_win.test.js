@@ -19,6 +19,17 @@ class MockElement {
         this._innerHTML = '';
         this.open = false;
         this._parent = null;
+        this.listeners = {};
+        this.attrs = {};
+        this.value = '';
+    }
+
+    setAttribute(name, val) {
+        this.attrs[name] = String(val);
+    }
+
+    getAttribute(name) {
+        return this.attrs[name] || null;
     }
 
     get parentElement() {
@@ -27,6 +38,23 @@ class MockElement {
 
     set parentElement(p) {
         this._parent = p;
+    }
+
+    addEventListener(event, callback, useCapture = false) {
+        if (!this.listeners[event]) {
+            this.listeners[event] = [];
+        }
+        this.listeners[event].push(callback);
+    }
+
+    dispatchEvent(event, eventData = {}) {
+        const callbacks = this.listeners[event] || [];
+        eventData.target = eventData.target || this;
+        eventData.preventDefault = eventData.preventDefault || (() => {});
+        callbacks.forEach(cb => cb(eventData));
+        if (this.parentElement) {
+            this.parentElement.dispatchEvent(event, eventData);
+        }
     }
 
     get innerHTML() {
@@ -83,6 +111,26 @@ class MockElement {
             
             root.appendChild(details);
             this.appendChild(root);
+        }
+        if (val.includes('msw-drag-cls')) {
+            const cls = new MockElement('span');
+            cls.id = 'msw-drag-cls';
+            this.appendChild(cls);
+        }
+        if (val.includes('msw-drag-tgl')) {
+            const tgl = new MockElement('span');
+            tgl.id = 'msw-drag-tgl';
+            this.appendChild(tgl);
+        }
+        if (val.includes('msw-drag-hdr')) {
+            const hdr = new MockElement('div');
+            hdr.id = 'msw-drag-hdr';
+            this.appendChild(hdr);
+        }
+        if (val.includes('msw-drag-rsz')) {
+            const rsz = new MockElement('div');
+            rsz.id = 'msw-drag-rsz';
+            this.appendChild(rsz);
         }
     }
 
@@ -212,4 +260,21 @@ test('msw_win should render collapsible tree and search inputs', async (t) => {
     assert.ok(matched.length > 0, '應能成功標記搜尋匹配項目');
     assert.ok(matched[0].classList.contains('msw-json-match-active'), '第一個匹配項目應設定 active 類別');
     assert.ok(matched[0].scrolled, '匹配項目應驅動 scrollIntoView 進行平滑捲動');
+
+    // 測試動態修改值與往回注入功能
+    const editableSpan = new MockElement('span');
+    editableSpan.classList.add('msw-json-value-editable');
+    editableSpan.setAttribute('data-path', JSON.stringify(['ROUTE_NO']));
+    editableSpan.setAttribute('data-type', 'string');
+    editableSpan.textContent = 'DevTest_002';
+
+    // 模擬將此 span 附加到 viewRoot 底下
+    const viewRoot = mockDoc.getElementById('msw-json-view-root');
+    viewRoot.appendChild(editableSpan);
+
+    // 觸發 blur 事件以進行寫回與響應式更新
+    editableSpan.dispatchEvent('blur');
+
+    // 驗證原 fakeData 中的欄位值已被成功注入變更
+    assert.strictEqual(fakeData.ROUTE_NO, 'DevTest_002', 'fakeData.ROUTE_NO 應被成功修改為 DevTest_002');
 });

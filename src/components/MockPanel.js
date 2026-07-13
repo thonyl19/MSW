@@ -14,14 +14,34 @@ window.msw_win = function ($d, data, title = '資料查看') {
         return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
+    // 輔助函式：遍歷路徑並透過 Vue.$set 寫回數值以維持響應性
+    function setValueAtPath(obj, path, value) {
+        let current = obj;
+        for (let i = 0; i < path.length - 1; i++) {
+            current = current[path[i]];
+            if (current === undefined || current === null) return;
+        }
+        const lastKey = path[path.length - 1];
+        if (current && lastKey !== undefined) {
+            if ($d && typeof $d.$set === 'function') {
+                $d.$set(current, lastKey, value);
+            } else {
+                current[lastKey] = value;
+            }
+        }
+    }
+
     // 遞迴渲染 JSON 樹狀結構
-    function renderJsonHtml(val, key = null, isLast = true) {
+    function renderJsonHtml(val, key = null, isLast = true, path = []) {
         const type = typeof val;
         let html = '';
         const keySpan = key !== null ? `<span style="color: #b794f4; user-select: text;">"${key}"</span>: ` : '';
         
+        const childPath = key !== null ? [...path, key] : path;
+        const pathAttr = escapeHtml(JSON.stringify(childPath));
+
         if (val === null) {
-            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span style="color: #ff79c6;">null</span>${isLast ? '' : ','}</div>`;
+            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span contenteditable="true" class="msw-json-value-editable" data-path="${pathAttr}" data-type="null" style="color: #ff79c6;">null</span>${isLast ? '' : ','}</div>`;
         } else if (Array.isArray(val)) {
             if (val.length === 0) {
                 html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span style="color: #8be9fd;">[]</span>${isLast ? '' : ','}</div>`;
@@ -33,7 +53,7 @@ window.msw_win = function ($d, data, title = '資料查看') {
                             <span>${keySpan}<span style="color: #8be9fd;">[</span></span> <span style="font-size: 11px; color: #6272a4; font-weight: normal; margin-left: 8px;">// ${val.length} items</span>
                         </summary>
                         <div class="msw-json-indent" style="border-left: 1px dashed rgba(255,255,255,0.15); padding-left: 10px; margin-left: 5px;">
-                            ${val.map((item, idx) => renderJsonHtml(item, null, idx === val.length - 1)).join('')}
+                            ${val.map((item, idx) => renderJsonHtml(item, null, idx === val.length - 1, [...childPath, idx])).join('')}
                         </div>
                         <div style="padding-left: 14px; color: #8be9fd; user-select: text;">]${isLast ? '' : ','}</div>
                     </details>
@@ -51,20 +71,20 @@ window.msw_win = function ($d, data, title = '資料查看') {
                             <span>${keySpan}<span style="color: #f1fa8c;">{</span></span> <span style="font-size: 11px; color: #6272a4; font-weight: normal; margin-left: 8px;">// ${keys.length} keys</span>
                         </summary>
                         <div class="msw-json-indent" style="border-left: 1px dashed rgba(255,255,255,0.15); padding-left: 10px; margin-left: 5px;">
-                            ${keys.map((k, idx) => renderJsonHtml(val[k], k, idx === keys.length - 1)).join('')}
+                            ${keys.map((k, idx) => renderJsonHtml(val[k], k, idx === keys.length - 1, childPath)).join('')}
                         </div>
                         <div style="padding-left: 14px; color: #f1fa8c; user-select: text;">}${isLast ? '' : ','}</div>
                     </details>
                 `;
             }
         } else if (type === 'string') {
-            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span style="color: #50fa7b;">"${escapeHtml(val)}"</span>${isLast ? '' : ','}</div>`;
+            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span style="color: #50fa7b;">"</span><span contenteditable="true" class="msw-json-value-editable" data-path="${pathAttr}" data-type="string" style="color: #50fa7b; outline: none;">${escapeHtml(val)}</span><span style="color: #50fa7b;">"</span>${isLast ? '' : ','}</div>`;
         } else if (type === 'number') {
-            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span style="color: #ffb86c;">${val}</span>${isLast ? '' : ','}</div>`;
+            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span contenteditable="true" class="msw-json-value-editable" data-path="${pathAttr}" data-type="number" style="color: #ffb86c; outline: none;">${val}</span>${isLast ? '' : ','}</div>`;
         } else if (type === 'boolean') {
-            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span style="color: #ff79c6;">${val}</span>${isLast ? '' : ','}</div>`;
+            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span contenteditable="true" class="msw-json-value-editable" data-path="${pathAttr}" data-type="boolean" style="color: #ff79c6; outline: none;">${val}</span>${isLast ? '' : ','}</div>`;
         } else {
-            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span>${escapeHtml(String(val))}</span>${isLast ? '' : ','}</div>`;
+            html = `<div style="padding-left: 20px; user-select: text;">${keySpan}<span contenteditable="true" class="msw-json-value-editable" data-path="${pathAttr}" data-type="other" style="outline: none;">${escapeHtml(String(val))}</span>${isLast ? '' : ','}</div>`;
         }
         
         return html;
@@ -132,6 +152,22 @@ window.msw_win = function ($d, data, title = '資料查看') {
                 background: rgba(255, 184, 108, 0.45) !important;
                 border-radius: 2px;
                 box-shadow: 0 0 4px #ffb86c;
+            }
+            .msw-json-value-editable {
+                cursor: text;
+                padding: 0 2px;
+                border-radius: 3px;
+                transition: background 0.2s, box-shadow 0.2s;
+            }
+            .msw-json-value-editable:hover {
+                background: rgba(255, 255, 255, 0.1);
+                box-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
+            }
+            .msw-json-value-editable:focus {
+                background: #282a36;
+                box-shadow: 0 0 4px #7239ea;
+                outline: none;
+                color: #fff !important;
             }
         </style>
         <div id="msw-drag-hdr" style="padding: 12px 18px; background: #1e1e2f; cursor: move; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); user-select: none;">
@@ -264,6 +300,54 @@ window.msw_win = function ($d, data, title = '資料查看') {
             }
         }
     };
+
+    // 註冊編輯事件（事件委派）
+    viewRoot.addEventListener('keydown', (e) => {
+        if (e.target.classList.contains('msw-json-value-editable')) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.blur(); // 觸發 blur 以完成儲存與重繪
+            }
+        }
+    });
+
+    viewRoot.addEventListener('blur', (e) => {
+        if (e.target.classList.contains('msw-json-value-editable')) {
+            const el = e.target;
+            const pathStr = el.getAttribute('data-path');
+            const type = el.getAttribute('data-type');
+            if (!pathStr) return;
+
+            try {
+                const path = JSON.parse(pathStr);
+                const rawText = el.textContent;
+                
+                // 解析數值型態
+                let parsedVal = rawText;
+                if (type === 'number') {
+                    parsedVal = Number(rawText);
+                    if (isNaN(parsedVal)) parsedVal = 0;
+                } else if (type === 'boolean') {
+                    parsedVal = rawText.toLowerCase() === 'true';
+                } else if (type === 'null') {
+                    parsedVal = (rawText === '' || rawText.toLowerCase() === 'null') ? null : rawText;
+                }
+
+                // 寫入 Vue 響應式資料中
+                setValueAtPath(data, path, parsedVal);
+
+                // 重繪 JSON 樹狀顯示以維持格式一致
+                viewRoot.innerHTML = renderJsonHtml(data, null, true);
+                
+                // 重繪後重新執行搜尋（如果當前有搜尋文字的話）以維持高亮
+                if (searchInput.value.trim()) {
+                    performSearch(searchInput.value.trim());
+                }
+            } catch (err) {
+                console.error('更新 JSON 資料失敗: ', err);
+            }
+        }
+    }, true); // 使用 capture 監聽 blur，因為 blur 事件不會冒泡
 
     // 關閉事件
     closeBtn.onclick = () => dialog.remove();
